@@ -177,10 +177,11 @@ const TransformationXPLR: React.FC = () => {
   ]);
   const [chatInput, setChatInput] = useState("");
 
-  // Additional functionality states
-  const [isGeneratingDeck, setIsGeneratingDeck] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  // Additional modal and functionality states
+  const [showConfigureAI, setShowConfigureAI] = useState(false);
+  const [showAddAsset, setShowAddAsset] = useState(false);
+  const [phaseFilter, setPhaseFilter] = useState<number | null>(null);
+  const [showPhaseFilter, setShowPhaseFilter] = useState(false);
 
   // Enhanced sample data with 7-phase workflow
   const sampleProject: TransformationProject = {
@@ -504,71 +505,18 @@ const TransformationXPLR: React.FC = () => {
 
   // Button functionality handlers
   const handleExportDeck = () => {
-    setIsExporting(true);
-    // Simulate deck generation
-    setTimeout(() => {
-      setIsExporting(false);
-      // Create downloadable content
-      const deckContent = {
-        projectName: currentProject?.clientName,
-        industry: currentProject?.industry,
-        progress: currentProject?.progress,
-        timeSaved: calculateTimeSaved(),
-        valueIdentified: currentProject?.projectValue,
-        keyInsights: aiInsights.slice(0, 3),
-        phases: sevenPhaseWorkflow,
-      };
-
-      const dataStr = JSON.stringify(deckContent, null, 2);
-      const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-
-      const exportFileDefaultName = `${currentProject?.clientName}_Transformation_Report.json`;
-
-      const linkElement = document.createElement("a");
-      linkElement.setAttribute("href", dataUri);
-      linkElement.setAttribute("download", exportFileDefaultName);
-      linkElement.click();
-
-      alert(`Deck generated successfully! Downloaded as ${exportFileDefaultName}`);
-    }, 2000);
-  };
-
-  const handleGenerateDeck = () => {
-    setIsGeneratingDeck(true);
-    setTimeout(() => {
-      setIsGeneratingDeck(false);
-      handleExportDeck();
-    }, 1500);
-  };
-
-  const handleViewAnalytics = () => {
-    setActiveTab("analytics");
-  };
-
-  const handleConfigureAI = () => {
-    alert("AI Configuration panel would open here. This would allow customizing AI parameters, confidence thresholds, and data sources.");
-  };
-
-  const handleFilterByPhase = () => {
-    alert("Phase filter modal would open here. This would allow filtering IP assets and insights by specific transformation phases.");
-  };
-
-  const handleAIOptimize = () => {
-    alert("AI Optimization starting... This would analyze the current workflow and suggest optimizations to further reduce timeline and increase value.");
-  };
-
-  const handleExportWorkflow = () => {
-    const workflowData = {
-      phases: sevenPhaseWorkflow,
-      acceleration: accelerationMetrics,
-      totalTimeSaved: calculateTimeSaved(),
-      exportDate: new Date(),
+    // Create deck export with project data
+    const deckData = {
+      project: currentProject,
+      insights: aiInsights,
+      workflow: workflowPhases,
+      timestamp: new Date().toISOString(),
     };
 
-    const dataStr = JSON.stringify(workflowData, null, 2);
+    const dataStr = JSON.stringify(deckData, null, 2);
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
 
-    const exportFileDefaultName = "Transformation_Workflow.json";
+    const exportFileDefaultName = `${currentProject?.clientName.replace(/\s+/g, "_")}_Transformation_Deck_${new Date().toISOString().split("T")[0]}.json`;
 
     const linkElement = document.createElement("a");
     linkElement.setAttribute("href", dataUri);
@@ -576,40 +524,103 @@ const TransformationXPLR: React.FC = () => {
     linkElement.click();
   };
 
-  const handleApplyRecommendation = (insight: AIInsight) => {
-    alert(`Applying recommendation: "${insight.title}". This would integrate the AI recommendation into the project workflow and update the implementation timeline.`);
+  const handleGenerateDeck = () => {
+    // Navigate to deck generation or open deck generation modal
+    alert(
+      `Generating presentation deck for ${currentProject?.clientName} with current project data, insights, and progress. This would typically open a deck generation interface or download a PowerPoint file.`
+    );
   };
 
-  const handleGoToPhase = (phaseId: number) => {
-    setActiveTab("workflow");
-    setSelectedPhase(phaseId);
-    alert(`Navigating to Phase ${phaseId}: ${sevenPhaseWorkflow.find(p => p.id === phaseId)?.title}. This would open the detailed phase view with current tasks and next steps.`);
+  const handleExportWorkflow = () => {
+    const workflowData = {
+      phases: workflowPhases,
+      accelerationMetrics,
+      project: currentProject?.clientName,
+      timestamp: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(workflowData, null, 2);
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `${currentProject?.clientName.replace(/\s+/g, "_")}_Workflow_${new Date().toISOString().split("T")[0]}.json`;
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
+    linkElement.click();
   };
 
-  const handleDownloadAsset = (asset: any) => {
-    alert(`Downloading asset: "${asset.title}". This would download the complete asset documentation, templates, and related materials.`);
+  const handleExportAnalysis = () => {
+    const analysisData = {
+      project: currentProject,
+      aiInsights,
+      accelerationMetrics,
+      hackettIPUtilization,
+      timestamp: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(analysisData, null, 2);
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `${currentProject?.clientName.replace(/\s+/g, "_")}_Analysis_${new Date().toISOString().split("T")[0]}.json`;
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
+    linkElement.click();
   };
 
-  const handleUseInProject = (asset: any) => {
-    alert(`Adding "${asset.title}" to current project. This would integrate the asset into the project workflow and add it to the active IP assets list.`);
-  };
-
-  const handleInitializeProject = () => {
-    alert("Project initialization starting... This would create a new project with the entered client data and AI-generated recommendations.");
-    setShowOnboarding(false);
+  const handleAIOptimize = () => {
+    alert(
+      "AI Optimization would analyze current workflow phases and suggest optimizations based on Hackett benchmarks and similar client experiences. This would open an AI-powered optimization interface."
+    );
   };
 
   const handleUploadSOW = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".pdf,.doc,.docx";
-    input.onchange = e => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+    input.accept = ".pdf,.doc,.docx,.txt";
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
       if (file) {
-        alert(`SOW file "${file.name}" uploaded successfully. AI is analyzing the document to extract project requirements and scope.`);
+        alert(`SOW file "${file.name}" would be uploaded and analyzed by AI for automatic project setup and requirement extraction.`);
       }
     };
     input.click();
+  };
+
+  const handleInitializeProject = () => {
+    alert("Project initialization would create a new project with the provided client data, set up initial phases, assign team members, and configure AI recommendations.");
+    setShowOnboarding(false);
+  };
+
+  const handleApplyRecommendation = () => {
+    if (selectedInsight) {
+      alert(`Applying recommendation: "${selectedInsight.title}". This would add the recommendation to the project roadmap, create tasks, and update timelines.`);
+      setShowInsightModal(false);
+    }
+  };
+
+  const handleGoToPhase = (phaseId?: number) => {
+    const targetPhase = phaseId || selectedPhaseDetail?.id;
+    if (targetPhase) {
+      setActiveTab("workflow");
+      alert(`Navigating to Phase ${targetPhase}. This would scroll to the specific phase and highlight relevant activities.`);
+      if (selectedPhaseDetail) setShowPhaseModal(false);
+    }
+  };
+
+  const handleDownloadAsset = () => {
+    if (selectedIPAsset) {
+      alert(`Downloading "${selectedIPAsset.title}" asset. This would download the actual Hackett IP documentation, templates, or tools.`);
+    }
+  };
+
+  const handleUseInProject = () => {
+    if (selectedIPAsset) {
+      alert(`Adding "${selectedIPAsset.title}" to current project. This would integrate the asset into the project workflow and make it available to team members.`);
+      setShowIPAssetModal(false);
+    }
   };
 
   const renderCommandCenter = () => (
@@ -686,11 +697,11 @@ const TransformationXPLR: React.FC = () => {
           <Brain className="h-6 w-6 text-purple-600" />
           <span>AI Assistant</span>
         </Button>
-        <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-green-200 hover:bg-green-50" onClick={handleExportDeck} disabled={isExporting}>
+        <Button onClick={handleExportDeck} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-green-200 hover:bg-green-50">
           <Download className="h-6 w-6 text-green-600" />
-          <span>{isExporting ? "Exporting..." : "Export Deck"}</span>
+          <span>Export Deck</span>
         </Button>
-        <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-orange-200 hover:bg-orange-50" onClick={handleViewAnalytics}>
+        <Button onClick={() => setActiveTab("analytics")} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-orange-200 hover:bg-orange-50">
           <BarChart3 className="h-6 w-6 text-orange-600" />
           <span>View Analytics</span>
         </Button>
@@ -718,9 +729,9 @@ const TransformationXPLR: React.FC = () => {
                   <Eye className="h-4 w-4 mr-2" />
                   View Workflow
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleGenerateDeck} disabled={isGeneratingDeck}>
+                <Button onClick={handleGenerateDeck} className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Presentation className="h-4 w-4 mr-2" />
-                  {isGeneratingDeck ? "Generating..." : "Generate Deck"}
+                  Generate Deck
                 </Button>
               </div>
             </div>
@@ -842,7 +853,7 @@ const TransformationXPLR: React.FC = () => {
               <CardTitle className="text-xl font-semibold text-gray-900">AI-Powered Insights</CardTitle>
               <Badge className="bg-purple-100 text-purple-700 border-purple-200">Phase {currentProject?.currentPhase} Focus</Badge>
             </div>
-            <Button variant="outline" size="sm" onClick={handleConfigureAI}>
+            <Button variant="outline" size="sm" onClick={() => setShowConfigureAI(true)}>
               <Settings className="h-4 w-4 mr-2" />
               Configure AI
             </Button>
@@ -915,7 +926,7 @@ const TransformationXPLR: React.FC = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Details
                       </Button>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleApplyRecommendation(insight)}>
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
                         <CheckSquare className="h-4 w-4 mr-1" />
                         Apply
                       </Button>
@@ -1019,11 +1030,11 @@ const TransformationXPLR: React.FC = () => {
           <p className="text-gray-600">Finance Transformation Blueprint with intelligent automation and Hackett IP integration</p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowPhaseFilter(!showPhaseFilter)}>
             <Filter className="h-4 w-4 mr-2" />
             Filter Phases
           </Button>
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={handleAIOptimize}>
+          <Button onClick={handleAIOptimize} className="bg-purple-600 hover:bg-purple-700 text-white">
             <Brain className="h-4 w-4 mr-2" />
             AI Optimize
           </Button>
@@ -1280,7 +1291,7 @@ const TransformationXPLR: React.FC = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         View Details
                       </Button>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleGoToPhase(phase.id)}>
+                      <Button onClick={() => handleGoToPhase(phase.id)} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
                         <ArrowRight className="h-4 w-4 mr-1" />
                         Go to Phase
                       </Button>
@@ -1310,11 +1321,11 @@ const TransformationXPLR: React.FC = () => {
             <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input placeholder="Search Hackett IP..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 w-64" />
           </div>
-          <Button variant="outline" onClick={handleFilterByPhase}>
+          <Button variant="outline" onClick={() => setPhaseFilter(phaseFilter ? null : 1)}>
             <Filter className="h-4 w-4 mr-2" />
             Filter by Phase
           </Button>
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+          <Button onClick={() => setShowAddAsset(true)} className="bg-purple-600 hover:bg-purple-700 text-white">
             <Plus className="h-4 w-4 mr-2" />
             Add Asset
           </Button>
@@ -1658,7 +1669,7 @@ const TransformationXPLR: React.FC = () => {
                                   <Eye className="h-3 w-3 mr-1" />
                                   View
                                 </Button>
-                                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleUseInProject(asset)}>
+                                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
                                   <Plus className="h-3 w-3 mr-1" />
                                   Use
                                 </Button>
@@ -1688,40 +1699,7 @@ const TransformationXPLR: React.FC = () => {
           </h2>
           <p className="text-gray-600">AI-powered analysis and benchmarking insights</p>
         </div>
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white"
-          onClick={() => {
-            const analyticsData = {
-              projectMetrics: {
-                valueIdentified: currentProject?.projectValue,
-                timeSaved: calculateTimeSaved(),
-                aiConfidence: Math.round(aiInsights.reduce((sum, insight) => sum + insight.confidence, 0) / aiInsights.length),
-                roiPotential: 340,
-              },
-              maturityAssessment: [
-                { capability: "Financial Planning", current: 2.8, target: 4.5, benchmark: 3.8 },
-                { capability: "Reporting", current: 3.2, target: 4.8, benchmark: 4.1 },
-                { capability: "Process Automation", current: 1.9, target: 4.2, benchmark: 3.5 },
-                { capability: "Analytics", current: 2.1, target: 4.6, benchmark: 3.9 },
-                { capability: "Business Partnering", current: 3.5, target: 4.7, benchmark: 4.0 },
-                { capability: "Risk Management", current: 2.6, target: 4.3, benchmark: 3.7 },
-              ],
-              exportDate: new Date(),
-            };
-
-            const dataStr = JSON.stringify(analyticsData, null, 2);
-            const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-
-            const exportFileDefaultName = `${currentProject?.clientName}_Analytics_Report.json`;
-
-            const linkElement = document.createElement("a");
-            linkElement.setAttribute("href", dataUri);
-            linkElement.setAttribute("download", exportFileDefaultName);
-            linkElement.click();
-
-            alert(`Analytics exported successfully! Downloaded as ${exportFileDefaultName}`);
-          }}
-        >
+        <Button onClick={handleExportAnalysis} className="bg-green-600 hover:bg-green-700 text-white">
           <Download className="h-4 w-4 mr-2" />
           Export Analysis
         </Button>
@@ -2185,7 +2163,7 @@ const TransformationXPLR: React.FC = () => {
                       <Upload className="h-4 w-4 mr-2" />
                       Upload SOW
                     </Button>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleInitializeProject}>
+                    <Button onClick={handleInitializeProject} className="bg-blue-600 hover:bg-blue-700 text-white">
                       <ArrowRight className="h-4 w-4 mr-2" />
                       Initialize Project
                     </Button>
@@ -2335,13 +2313,7 @@ const TransformationXPLR: React.FC = () => {
                   <Button variant="outline" onClick={() => setShowInsightModal(false)}>
                     Close
                   </Button>
-                  <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => {
-                      handleApplyRecommendation(selectedInsight!);
-                      setShowInsightModal(false);
-                    }}
-                  >
+                  <Button onClick={handleApplyRecommendation} className="bg-blue-600 hover:bg-blue-700 text-white">
                     <CheckSquare className="h-4 w-4 mr-2" />
                     Apply Recommendation
                   </Button>
@@ -2457,14 +2429,8 @@ const TransformationXPLR: React.FC = () => {
                   <Button variant="outline" onClick={() => setShowPhaseModal(false)}>
                     Close
                   </Button>
-                  <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => {
-                      handleGoToPhase(selectedPhaseDetail!.id);
-                      setShowPhaseModal(false);
-                    }}
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2" />
+                  <Button onClick={() => handleGoToPhase(phase.id)} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <ArrowRight className="h-4 w-4 mr-1" />
                     Go to Phase
                   </Button>
                 </div>
@@ -2589,17 +2555,11 @@ const TransformationXPLR: React.FC = () => {
                     Close
                   </Button>
                   <div className="flex space-x-3">
-                    <Button variant="outline" onClick={() => handleDownloadAsset(selectedIPAsset)}>
+                    <Button variant="outline" onClick={handleDownloadAsset}>
                       <Download className="h-4 w-4 mr-2" />
                       Download Asset
                     </Button>
-                    <Button
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                      onClick={() => {
-                        handleUseInProject(selectedIPAsset);
-                        setShowIPAssetModal(false);
-                      }}
-                    >
+                    <Button onClick={handleUseInProject} className="bg-purple-600 hover:bg-purple-700 text-white">
                       <Plus className="h-4 w-4 mr-2" />
                       Use in Project
                     </Button>
