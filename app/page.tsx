@@ -423,13 +423,13 @@ const TransformationXPLR: React.FC = () => {
       case "completed":
         return "text-green-600 bg-green-50 border-green-200";
       case "in-progress":
-        return "text-blue-600 bg-blue-50 border-blue-200";
+        return "text-brand-blue bg-brand-blue/10 border-brand-blue/20";
       case "ai-enhanced":
-        return "text-purple-600 bg-purple-50 border-purple-200";
+        return "text-brand-orange bg-brand-orange/10 border-brand-orange/20";
       case "pending":
-        return "text-gray-600 bg-gray-50 border-gray-200";
+        return "text-neutral-400 bg-neutral-50 border-neutral-200";
       default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
+        return "text-neutral-400 bg-neutral-50 border-neutral-200";
     }
   };
 
@@ -626,7 +626,7 @@ const TransformationXPLR: React.FC = () => {
   const renderCommandCenter = () => (
     <div className="space-y-6">
       {/* Enhanced Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-xl p-8 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-brand-blue via-brand-blue-dark to-brand-blue-dark rounded-xl p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
         <div className="relative z-10">
@@ -638,27 +638,27 @@ const TransformationXPLR: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold">Transformation XPLR</h1>
-                  <p className="text-blue-100 text-lg">AI-Powered Finance Transformation Platform</p>
-                  <p className="text-blue-200 text-sm mt-1">Accelerating delivery by up to 50% with intelligent automation</p>
+                  <p className="text-white/90 text-lg">AI-Powered Finance Transformation Platform</p>
+                  <p className="text-white/80 text-sm mt-1">Accelerating delivery by up to 50% with intelligent automation</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                   <div className="flex items-center space-x-2 mb-2">
-                    <Brain className="h-5 w-5 text-blue-200" />
+                    <Brain className="h-5 w-5 text-white/80" />
                     <span className="text-sm font-medium">AI Acceleration</span>
                   </div>
                   <p className="text-3xl font-bold">{calculateTimeSaved()}%</p>
-                  <p className="text-xs text-blue-200">Faster delivery</p>
+                  <p className="text-xs text-white/80">Faster delivery</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                   <div className="flex items-center space-x-2 mb-2">
-                    <Database className="h-5 w-5 text-purple-200" />
+                    <Database className="h-5 w-5 text-white/80" />
                     <span className="text-sm font-medium">Hackett IP</span>
                   </div>
                   <p className="text-3xl font-bold">{currentProject?.hackettIPMatches}</p>
-                  <p className="text-xs text-purple-200">Relevant assets</p>
+                  <p className="text-xs text-white/80">Relevant assets</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                   <div className="flex items-center space-x-2 mb-2">
@@ -689,12 +689,12 @@ const TransformationXPLR: React.FC = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Button onClick={() => setShowOnboarding(true)} className="h-20 bg-blue-600 hover:bg-blue-700 text-white flex flex-col items-center justify-center space-y-2">
+        <Button onClick={() => setShowOnboarding(true)} className="h-20 bg-brand-blue hover:bg-brand-blue-dark text-white flex flex-col items-center justify-center space-y-2">
           <Plus className="h-6 w-6" />
           <span>New Project</span>
         </Button>
-        <Button onClick={() => setShowAIAssistant(true)} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-purple-200 hover:bg-purple-50">
-          <Brain className="h-6 w-6 text-purple-600" />
+        <Button onClick={() => setShowAIAssistant(true)} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-brand-orange/30 hover:bg-brand-orange/10">
+          <Brain className="h-6 w-6 text-brand-orange" />
           <span>AI Assistant</span>
         </Button>
         <Button onClick={handleExportDeck} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 border-green-200 hover:bg-green-50">
@@ -709,18 +709,18 @@ const TransformationXPLR: React.FC = () => {
 
       {/* Current Project Status */}
       {currentProject && (
-        <Card className="bg-white border border-gray-200 shadow-sm">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+        <Card className="bg-white border border-neutral-200 shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-neutral-50 to-neutral-100 border-b border-neutral-200">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-                  <Building className="h-6 w-6 text-blue-600" />
+                <CardTitle className="text-2xl font-bold text-neutral-500 flex items-center space-x-3">
+                  <Building className="h-6 w-6 text-brand-blue" />
                   <span>{currentProject.clientName}</span>
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="bg-brand-blue/10 text-brand-blue border-brand-blue/20">
                     {currentProject.industry}
                   </Badge>
                 </CardTitle>
-                <CardDescription className="text-gray-600 text-lg mt-1">
+                <CardDescription className="text-neutral-400 text-lg mt-1">
                   {currentProject.engagementType} • {currentProject.region}
                 </CardDescription>
               </div>
@@ -729,7 +729,7 @@ const TransformationXPLR: React.FC = () => {
                   <Eye className="h-4 w-4 mr-2" />
                   View Workflow
                 </Button>
-                <Button onClick={handleGenerateDeck} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button onClick={handleGenerateDeck} className="bg-brand-blue hover:bg-brand-blue-dark text-white">
                   <Presentation className="h-4 w-4 mr-2" />
                   Generate Deck
                 </Button>
@@ -849,9 +849,9 @@ const TransformationXPLR: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Brain className="h-6 w-6 text-purple-600" />
-              <CardTitle className="text-xl font-semibold text-gray-900">AI-Powered Insights</CardTitle>
-              <Badge className="bg-purple-100 text-purple-700 border-purple-200">Phase {currentProject?.currentPhase} Focus</Badge>
+              <Brain className="h-6 w-6 text-brand-orange" />
+              <CardTitle className="text-xl font-semibold text-neutral-500">AI-Powered Insights</CardTitle>
+              <Badge className="bg-brand-orange/10 text-brand-orange border-brand-orange/20">Phase {currentProject?.currentPhase} Focus</Badge>
             </div>
             <Button variant="outline" size="sm" onClick={() => setShowConfigureAI(true)}>
               <Settings className="h-4 w-4 mr-2" />
@@ -926,7 +926,7 @@ const TransformationXPLR: React.FC = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Details
                       </Button>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button size="sm" className="bg-brand-blue hover:bg-brand-blue-dark text-white">
                         <CheckSquare className="h-4 w-4 mr-1" />
                         Apply
                       </Button>
@@ -995,8 +995,8 @@ const TransformationXPLR: React.FC = () => {
                   }}
                   formatter={(value, name) => [`${value} days`, name === "traditional" ? "Traditional Approach" : "AI-Enhanced Approach"]}
                 />
-                <Area type="monotone" dataKey="traditional" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
-                <Area type="monotone" dataKey="aiEnhanced" stackId="2" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.7} />
+                <Area type="monotone" dataKey="traditional" stackId="1" stroke="hsl(var(--neutral-400))" fill="hsl(var(--neutral-400))" fillOpacity={0.3} />
+                <Area type="monotone" dataKey="aiEnhanced" stackId="2" stroke="hsl(var(--primary-blue))" fill="hsl(var(--primary-blue))" fillOpacity={0.7} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -1034,7 +1034,7 @@ const TransformationXPLR: React.FC = () => {
             <Filter className="h-4 w-4 mr-2" />
             Filter Phases
           </Button>
-          <Button onClick={handleAIOptimize} className="bg-purple-600 hover:bg-purple-700 text-white">
+          <Button onClick={handleAIOptimize} className="bg-brand-orange hover:bg-brand-orange/90 text-white">
             <Brain className="h-4 w-4 mr-2" />
             AI Optimize
           </Button>
@@ -1345,7 +1345,19 @@ const TransformationXPLR: React.FC = () => {
                 <RechartsPieChart>
                   <Pie data={hackettIPUtilization} cx="50%" cy="50%" outerRadius={80} dataKey="matches" label={({ category, matches }) => `${category}: ${matches}`}>
                     {hackettIPUtilization.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"][index]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          [
+                            "hsl(var(--primary-blue))",
+                            "hsl(var(--secondary-orange))",
+                            "hsl(var(--primary-blue-light))",
+                            "hsl(var(--primary-blue-dark))",
+                            "hsl(var(--neutral-400))",
+                            "hsl(var(--neutral-300))",
+                          ][index]
+                        }
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -1373,8 +1385,8 @@ const TransformationXPLR: React.FC = () => {
                       </Badge>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full transition-all duration-500" style={{ width: `${item.utilization}%` }}></div>
+                  <div className="w-full bg-neutral-200 rounded-full h-2">
+                    <div className="bg-brand-orange h-2 rounded-full transition-all duration-500" style={{ width: `${item.utilization}%` }}></div>
                   </div>
                 </div>
               ))}
@@ -1790,9 +1802,9 @@ const TransformationXPLR: React.FC = () => {
                 <PolarGrid />
                 <PolarAngleAxis dataKey="capability" />
                 <PolarRadiusAxis angle={90} domain={[0, 5]} />
-                <Radar name="Current" dataKey="current" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
-                <Radar name="Target" dataKey="target" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
-                <Radar name="Benchmark" dataKey="benchmark" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} />
+                <Radar name="Current" dataKey="current" stroke="hsl(var(--neutral-400))" fill="hsl(var(--neutral-400))" fillOpacity={0.3} />
+                <Radar name="Target" dataKey="target" stroke="hsl(var(--secondary-orange))" fill="hsl(var(--secondary-orange))" fillOpacity={0.3} />
+                <Radar name="Benchmark" dataKey="benchmark" stroke="hsl(var(--primary-blue))" fill="hsl(var(--primary-blue))" fillOpacity={0.1} />
                 <Tooltip />
               </RadarChart>
             </ResponsiveContainer>
@@ -1821,8 +1833,8 @@ const TransformationXPLR: React.FC = () => {
                   <XAxis dataKey="process" stroke="#64748b" />
                   <YAxis stroke="#64748b" />
                   <Tooltip />
-                  <Bar dataKey="current" fill="#ef4444" name="Current (days)" />
-                  <Bar dataKey="improved" fill="#10b981" name="Improved (days)" />
+                  <Bar dataKey="current" fill="hsl(var(--neutral-400))" name="Current (days)" />
+                  <Bar dataKey="improved" fill="hsl(var(--secondary-orange))" name="Improved (days)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1849,8 +1861,8 @@ const TransformationXPLR: React.FC = () => {
                   <XAxis dataKey="month" stroke="#64748b" />
                   <YAxis stroke="#64748b" />
                   <Tooltip formatter={value => [`$${value}M`, ""]} />
-                  <Line type="monotone" dataKey="cumulative" stroke="#3b82f6" strokeWidth={3} name="Cumulative Value" />
-                  <Line type="monotone" dataKey="monthly" stroke="#10b981" strokeWidth={2} name="Monthly Value" />
+                  <Line type="monotone" dataKey="cumulative" stroke="hsl(var(--primary-blue))" strokeWidth={3} name="Cumulative Value" />
+                  <Line type="monotone" dataKey="monthly" stroke="hsl(var(--secondary-orange))" strokeWidth={2} name="Monthly Value" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -1868,18 +1880,18 @@ const TransformationXPLR: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-brand-blue to-brand-blue-dark rounded-lg flex items-center justify-center">
                   <Zap className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Transformation XPLR</h1>
-                  <p className="text-xs text-gray-500">AI-Powered Finance Transformation</p>
+                  <h1 className="text-xl font-bold text-neutral-500">Transformation XPLR</h1>
+                  <p className="text-xs text-neutral-400">AI-Powered Finance Transformation</p>
                 </div>
               </div>
               {currentProject && (
-                <div className="hidden md:block pl-6 border-l border-gray-200">
-                  <span className="text-sm text-gray-500">Active:</span>
-                  <span className="ml-2 font-medium text-gray-900">{currentProject.clientName}</span>
+                <div className="hidden md:block pl-6 border-l border-neutral-200">
+                  <span className="text-sm text-neutral-400">Active:</span>
+                  <span className="ml-2 font-medium text-neutral-500">{currentProject.clientName}</span>
                 </div>
               )}
             </div>
@@ -1911,7 +1923,7 @@ const TransformationXPLR: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  activeTab === tab.id ? "border-brand-blue text-brand-blue" : "border-transparent text-neutral-400 hover:text-neutral-500 hover:border-neutral-300"
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -1934,13 +1946,13 @@ const TransformationXPLR: React.FC = () => {
       {showOnboarding && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="bg-white w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <CardHeader className="bg-gradient-to-r from-brand-blue to-brand-blue-dark text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Plus className="h-6 w-6" />
                   <div>
                     <CardTitle className="text-xl font-semibold">New Finance Transformation Project</CardTitle>
-                    <CardDescription className="text-blue-100">AI-powered client onboarding and project setup</CardDescription>
+                    <CardDescription className="text-white/80">AI-powered client onboarding and project setup</CardDescription>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setShowOnboarding(false)} className="text-white hover:bg-white/20">
@@ -2163,7 +2175,7 @@ const TransformationXPLR: React.FC = () => {
                       <Upload className="h-4 w-4 mr-2" />
                       Upload SOW
                     </Button>
-                    <Button onClick={handleInitializeProject} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button onClick={handleInitializeProject} className="bg-brand-blue hover:bg-brand-blue-dark text-white">
                       <ArrowRight className="h-4 w-4 mr-2" />
                       Initialize Project
                     </Button>
@@ -2425,11 +2437,11 @@ const TransformationXPLR: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-neutral-200">
                   <Button variant="outline" onClick={() => setShowPhaseModal(false)}>
                     Close
                   </Button>
-                  <Button onClick={() => handleGoToPhase(phase.id)} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button onClick={() => handleGoToPhase(selectedPhaseDetail?.id)} size="sm" className="bg-brand-blue hover:bg-brand-blue-dark text-white">
                     <ArrowRight className="h-4 w-4 mr-1" />
                     Go to Phase
                   </Button>
