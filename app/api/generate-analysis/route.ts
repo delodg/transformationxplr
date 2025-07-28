@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  let questionnaireData: any;
+
   try {
-    const questionnaireData = await req.json();
+    questionnaireData = await req.json();
 
     // Prepare the Claude API request for comprehensive analysis
     const analysisPrompt = `
@@ -136,7 +138,7 @@ Ensure all recommendations are specific, actionable, and quantified where possib
   } catch (error) {
     console.error("Error generating AI analysis:", error);
 
-    // Fallback analysis if AI fails
+    // Fallback analysis if AI fails - now questionnaireData is in scope
     const fallbackAnalysis = {
       estimatedAIAcceleration: 35,
       estimatedCompletion: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -145,8 +147,8 @@ Ensure all recommendations are specific, actionable, and quantified where possib
       insights: [
         {
           type: "opportunity",
-          title: `${questionnaireData.industry} Process Optimization`,
-          description: `Leverage industry best practices to optimize finance operations for ${questionnaireData.companyName}`,
+          title: `${questionnaireData?.industry || "Business"} Process Optimization`,
+          description: `Leverage industry best practices to optimize finance operations for ${questionnaireData?.companyName || "your company"}`,
           confidence: 85,
           impact: "high",
           source: "Industry Analysis",
@@ -160,7 +162,7 @@ Ensure all recommendations are specific, actionable, and quantified where possib
         {
           type: "automation",
           title: "ERP Enhancement Opportunities",
-          description: `Optimize ${questionnaireData.currentERP} system integration and automation capabilities`,
+          description: `Optimize ${questionnaireData?.currentERP || "current ERP"} system integration and automation capabilities`,
           confidence: 78,
           impact: "medium",
           source: "Technology Assessment",
@@ -176,7 +178,7 @@ Ensure all recommendations are specific, actionable, and quantified where possib
         {
           phaseNumber: 1,
           title: "Project Initiation & Planning",
-          description: `Initial assessment and planning phase for ${questionnaireData.companyName}'s transformation`,
+          description: `Initial assessment and planning phase for ${questionnaireData?.companyName || "your company"}'s transformation`,
           status: "pending",
           aiAcceleration: 40,
           duration: "2 weeks",
