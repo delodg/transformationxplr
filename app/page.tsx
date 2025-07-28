@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, Workflow, BarChart3, Database, CheckCircle, AlertCircle, TrendingUp, Zap, Brain, Lightbulb, Users, Calendar, DollarSign, Activity, Plus, Settings, Download } from "lucide-react";
+import { Target, Workflow, BarChart3, Database, CheckCircle, AlertCircle, TrendingUp, Zap, Brain, Lightbulb, Users, Plus } from "lucide-react";
 
 import { CommandCenter } from "../components/workflow/CommandCenter";
 import { WorkflowPhases } from "../components/workflow/WorkflowPhases";
@@ -14,24 +14,36 @@ import { ClientOnboardingModal } from "../components/onboarding/ClientOnboarding
 import { GuidedTour } from "../components/guidance/GuidedTour";
 import { useUser } from "@clerk/nextjs";
 
-// Import types and data from existing files
-import { TransformationProject, AIInsight, WorkflowPhase } from "../types";
-import { SAMPLE_PROJECT, WORKFLOW_PHASES, AI_INSIGHTS, COMPANY_DATASETS } from "../constants/workflowData";
+// Database imports
+import {
+  getCompaniesByUser,
+  getAIInsightsByCompany,
+  getWorkflowPhasesByCompany,
+  createCompany,
+  bulkCreateAIInsights,
+  bulkCreateWorkflowPhases,
+  generateId,
+  stringifyJSONField,
+} from "../lib/db/services";
+import type { Company, AIInsight, WorkflowPhase } from "../lib/db/schema";
+
+// Types for UI compatibility
+import { TransformationProject, AIInsight as UIAIInsight, WorkflowPhase as UIWorkflowPhase } from "../types";
 
 const TransformationXPLR: React.FC = () => {
   const { user, isLoaded } = useUser();
 
-  // Core application state
+  // Core application state - now database-driven
   const [activeTab, setActiveTab] = useState("command-center");
-  const [selectedCompany, setSelectedCompany] = useState<string>("mastec");
-  const [currentProject, setCurrentProject] = useState<TransformationProject>(COMPANY_DATASETS.mastec.project);
-  const [workflowPhases, setWorkflowPhases] = useState<WorkflowPhase[]>(WORKFLOW_PHASES);
-  const [aiInsights, setAIInsights] = useState<AIInsight[]>(COMPANY_DATASETS.mastec.aiInsights);
+  const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [currentProject, setCurrentProject] = useState<TransformationProject | null>(null);
+  const [workflowPhases, setWorkflowPhases] = useState<UIWorkflowPhase[]>([]);
+  const [aiInsights, setAIInsights] = useState<UIAIInsight[]>([]);
 
   // Modal and UI state
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState<WorkflowPhase | null>(null);
   const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string; type: "success" | "info" | "warning" | "error"; timestamp: string }[]>([]);
 
@@ -39,6 +51,7 @@ const TransformationXPLR: React.FC = () => {
   const [showGuidedTour, setShowGuidedTour] = useState(false);
   const [tourType, setTourType] = useState<"onboarding" | "phase-specific" | "full-workflow" | "ai-assistant">("full-workflow");
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Show loading state while Clerk loads
   if (!isLoaded) {
@@ -64,38 +77,125 @@ const TransformationXPLR: React.FC = () => {
     );
   }
 
-  // Initialize application with sample data
+  // Load user's companies and data
   useEffect(() => {
-    // Simulate real-time updates with better progress management
-    const interval = setInterval(() => {
-      // Update progress incrementally with whole numbers only
-      setCurrentProject(prev => ({
-        ...prev,
-        progress: Math.min(Math.floor(prev.progress + Math.random() * 2), 100),
+    if (user) {
+      loadUserData();
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Load user's companies from database
+      const userCompanies = await getCompaniesByUser(user.id);
+      setCompanies(userCompanies);
+
+      if (userCompanies.length === 0) {
+        // No companies yet - show onboarding
+        setIsFirstTimeUser(true);
+        setShowOnboarding(true);
+      } else {
+        // Load first company by default
+        const defaultCompany = userCompanies[0];
+        setSelectedCompany(defaultCompany.id);
+        await loadCompanyData(defaultCompany);
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadCompanyData = async (company: Company) => {
+    try {
+      // Convert database company to UI format
+      const projectData: TransformationProject = {
+        id: company.id,
+        clientName: company.clientName,
+        industry: company.industry,
+        engagementType: company.engagementType,
+        status: company.status as any,
+        progress: company.progress,
+        aiAcceleration: company.aiAcceleration,
+        startDate: company.startDate,
+        estimatedCompletion: company.estimatedCompletion,
+        teamMembers: JSON.parse(company.teamMembers || "[]"),
+        hackettIPMatches: company.hackettIPMatches || 0,
+        region: company.region,
+        projectValue: company.projectValue || 0,
+        currentPhase: company.currentPhase || 1,
+        revenue: company.revenue || undefined,
+        employees: company.employees || undefined,
+        currentERP: company.currentERP || undefined,
+        painPoints: JSON.parse(company.painPoints || "[]"),
+        objectives: JSON.parse(company.objectives || "[]"),
+        timeline: company.timeline || undefined,
+        budget: company.budget || undefined,
+      };
+
+      setCurrentProject(projectData);
+
+      // Load AI insights for this company
+      const insights = await getAIInsightsByCompany(company.id);
+      // @ts-ignore - Database schema types need refinement
+      const uiInsights: UIAIInsight[] = insights.map((insight: any) => ({
+        id: insight.id,
+        type: insight.type as any,
+        title: insight.title,
+        description: insight.description,
+        confidence: insight.confidence,
+        impact: insight.impact as any,
+        source: insight.source,
+        phase: insight.phase,
+        actionable: insight.actionable ?? true,
+        estimatedValue: insight.estimatedValue || undefined,
+        timeframe: insight.timeframe || undefined,
       }));
+      setAIInsights(uiInsights);
 
-      // Update workflow phases progress
-      setWorkflowPhases(prev =>
-        prev.map(phase => ({
-          ...phase,
-          progress: phase.status === "in-progress" ? Math.min(Math.floor(phase.progress + Math.random() * 3), 100) : phase.progress,
-        }))
-      );
-    }, 45000);
-
-    return () => clearInterval(interval);
-  }, []);
+      // Load workflow phases for this company
+      const phases = await getWorkflowPhasesByCompany(company.id);
+      // @ts-ignore - Database schema types need refinement
+      const uiPhases: UIWorkflowPhase[] = phases.map((phase: any) => ({
+        id: phase.phaseNumber,
+        title: phase.title,
+        description: phase.description,
+        status: phase.status as any,
+        progress: phase.progress || 0,
+        aiAcceleration: phase.aiAcceleration || 0,
+        duration: phase.duration || "2 weeks",
+        traditionalDuration: phase.traditionalDuration || "4 weeks",
+        hackettIP: JSON.parse(phase.hackettIP || "[]"),
+        deliverables: JSON.parse(phase.deliverables || "[]"),
+        aiSuggestions: JSON.parse(phase.aiSuggestions || "[]"),
+        keyActivities: JSON.parse(phase.keyActivities || "[]"),
+        dependencies: JSON.parse(phase.dependencies || "[]"),
+        teamRole: JSON.parse(phase.teamRole || "[]"),
+        clientTasks: JSON.parse(phase.clientTasks || "[]"),
+        estimatedCompletion: phase.estimatedCompletion || undefined,
+        riskFactors: JSON.parse(phase.riskFactors || "[]"),
+        successMetrics: JSON.parse(phase.successMetrics || "[]"),
+      }));
+      setWorkflowPhases(uiPhases);
+    } catch (error) {
+      console.error("Error loading company data:", error);
+    }
+  };
 
   // Check for first-time user and show onboarding tour
   useEffect(() => {
-    const hasVisitedBefore = localStorage.getItem(`transformation-xplr-visited-${user.id}`);
-    if (!hasVisitedBefore) {
-      setIsFirstTimeUser(true);
-      setTourType("onboarding");
-      setShowGuidedTour(true);
-      localStorage.setItem(`transformation-xplr-visited-${user.id}`, "true");
+    if (companies.length > 0) {
+      const hasVisitedBefore = localStorage.getItem(`transformation-xplr-visited-${user.id}`);
+      if (!hasVisitedBefore) {
+        setTourType("onboarding");
+        setShowGuidedTour(true);
+        localStorage.setItem(`transformation-xplr-visited-${user.id}`, "true");
+      }
     }
-  }, [user.id]);
+  }, [user.id, companies.length]);
 
   // Enhanced notification system
   const addNotification = (message: string, type: "success" | "info" | "warning" | "error" = "success") => {
@@ -111,126 +211,158 @@ const TransformationXPLR: React.FC = () => {
     }, 5000);
   };
 
-  // Enhanced progress calculation
-  const calculateOverallProgress = () => {
-    const totalPhaseProgress = workflowPhases.reduce((total, phase) => total + phase.progress, 0);
-    return Math.floor(totalPhaseProgress / workflowPhases.length);
-  };
-
   // Enhanced event handlers
   const handleNewProject = () => {
     addNotification("Starting new project creation...", "info");
     setShowOnboarding(true);
   };
 
-  const handleClientOnboardingSubmit = (data: any) => {
-    console.log("New project data:", data);
+  const handleClientOnboardingSubmit = async (data: any) => {
+    try {
+      addNotification("Analyzing company data with AI...", "info");
 
-    // Generate new company key
-    const companyKey = data.companyName
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
+      const companyId = generateId();
 
-    // Create comprehensive project data
-    const newProject: TransformationProject = {
-      id: `project_${Date.now()}`,
-      clientName: data.companyName,
-      industry: data.industry,
-      engagementType: "Finance Transformation Blueprint",
-      status: "initiation",
-      progress: 5,
-      aiAcceleration: Math.floor(35 + Math.random() * 25),
-      startDate: new Date().toISOString().split("T")[0],
-      estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      teamMembers: ["AI Assistant", "Project Manager", "Lead Analyst", "Senior Consultant"],
-      hackettIPMatches: Math.floor(800 + Math.random() * 600),
-      region: data.region,
-      projectValue: 0,
-      currentPhase: 1,
-      revenue: data.revenue,
-      employees: data.employees,
-      currentERP: data.currentERP,
-      painPoints: data.painPoints,
-      objectives: data.objectives,
-      timeline: data.timeline,
-      budget: data.budget,
-    };
+      // Generate AI analysis based on questionnaire data
+      const aiAnalysis = await generateCompanyAnalysis(data);
 
-    // Generate initial AI insights
-    const initialInsights: AIInsight[] = [
-      {
-        id: `insight_${Date.now()}_1`,
-        type: "opportunity",
-        title: `${data.industry} Best Practices Implementation`,
-        description: `Leverage industry-specific best practices to optimize finance operations for ${data.companyName}`,
-        confidence: 85,
-        impact: "high",
-        source: "Industry Analysis",
-        phase: 1,
-        actionable: true,
-        estimatedValue: Math.floor(500000 + Math.random() * 1000000),
-        timeframe: "6 months",
-      },
-      {
-        id: `insight_${Date.now()}_2`,
-        type: "automation",
-        title: "Process Automation Opportunities",
-        description: "Identify and implement automation solutions to address identified pain points",
-        confidence: 78,
-        impact: "medium",
-        source: "Pain Point Analysis",
-        phase: 2,
-        actionable: true,
-        estimatedValue: Math.floor(300000 + Math.random() * 800000),
-        timeframe: "4 months",
-      },
-    ];
+      // Create company record
+      const newCompanyData = {
+        id: companyId,
+        userId: user.id,
+        clientName: data.companyName,
+        industry: data.industry,
+        engagementType: "Full Transformation",
+        status: "initiation" as const,
+        progress: 5,
+        aiAcceleration: aiAnalysis.estimatedAIAcceleration,
+        startDate: new Date().toISOString().split("T")[0],
+        estimatedCompletion: aiAnalysis.estimatedCompletion,
+        teamMembers: stringifyJSONField([]),
+        hackettIPMatches: aiAnalysis.hackettMatches,
+        region: data.region,
+        projectValue: aiAnalysis.estimatedValue,
+        currentPhase: 1,
+        revenue: data.revenue,
+        employees: data.employees,
+        currentERP: data.currentERP,
+        painPoints: stringifyJSONField(data.painPoints || []),
+        objectives: stringifyJSONField(data.objectives || []),
+        timeline: data.timeline,
+        budget: data.budget,
+      };
 
-    // Store in user-specific localStorage
-    const userStorageKey = `transformation-xplr-companies-${user.id}`;
-    const existingCompanies = JSON.parse(localStorage.getItem(userStorageKey) || "{}");
-    existingCompanies[companyKey] = { project: newProject, aiInsights: initialInsights };
-    localStorage.setItem(userStorageKey, JSON.stringify(existingCompanies));
+      const newCompany = await createCompany(newCompanyData);
 
-    // Update current application state
-    setCurrentProject(newProject);
-    setAIInsights(initialInsights);
-    setSelectedCompany(companyKey);
-    setShowOnboarding(false);
+      // Generate and save AI insights
+      await bulkCreateAIInsights(
+        aiAnalysis.insights.map(insight => ({
+          id: generateId(),
+          companyId: companyId,
+          type: insight.type,
+          title: insight.title,
+          description: insight.description,
+          confidence: insight.confidence,
+          impact: insight.impact,
+          source: insight.source,
+          phase: insight.phase,
+          actionable: insight.actionable,
+          estimatedValue: insight.estimatedValue,
+          timeframe: insight.timeframe,
+          dependencies: stringifyJSONField(insight.dependencies || []),
+          recommendations: stringifyJSONField(insight.recommendations || []),
+        }))
+      );
 
-    // Reset workflow phases for new project
-    setWorkflowPhases(
-      WORKFLOW_PHASES.map(phase => ({
-        ...phase,
-        status: phase.id === 1 ? "in-progress" : "pending",
-        progress: phase.id === 1 ? 15 : 0,
-      }))
-    );
+      // Generate and save workflow phases
+      await bulkCreateWorkflowPhases(
+        aiAnalysis.workflowPhases.map(phase => ({
+          id: generateId(),
+          companyId: companyId,
+          phaseNumber: phase.phaseNumber,
+          title: phase.title,
+          description: phase.description,
+          status: phase.status,
+          aiAcceleration: phase.aiAcceleration,
+          duration: phase.duration,
+          traditionalDuration: phase.traditionalDuration,
+          hackettIP: stringifyJSONField(phase.hackettIP),
+          deliverables: stringifyJSONField(phase.deliverables),
+          aiSuggestions: stringifyJSONField(phase.aiSuggestions),
+          keyActivities: stringifyJSONField(phase.keyActivities),
+          dependencies: stringifyJSONField(phase.dependencies),
+          teamRole: stringifyJSONField(phase.teamRole),
+          clientTasks: stringifyJSONField(phase.clientTasks),
+          progress: 0,
+          estimatedCompletion: phase.estimatedCompletion,
+          riskFactors: stringifyJSONField(phase.riskFactors),
+          successMetrics: stringifyJSONField(phase.successMetrics),
+        }))
+      );
 
-    addNotification(`New project "${data.companyName}" created successfully!`, "success");
+      // Update state
+      const updatedCompanies = [...companies, newCompany];
+      setCompanies(updatedCompanies);
+      setSelectedCompany(newCompany.id);
+      await loadCompanyData(newCompany);
 
-    // Auto-start onboarding tour
-    setTimeout(() => {
-      setTourType("onboarding");
-      setShowGuidedTour(true);
-    }, 2000);
-    setActiveTab("command-center");
+      setShowOnboarding(false);
+      addNotification(`AI analysis complete! Generated ${aiAnalysis.insights.length} insights and 7-phase roadmap for ${data.companyName}`, "success");
+
+      // Auto-start onboarding tour
+      setTimeout(() => {
+        setTourType("onboarding");
+        setShowGuidedTour(true);
+      }, 2000);
+      setActiveTab("command-center");
+    } catch (error) {
+      console.error("Error creating company analysis:", error);
+      addNotification("Error creating company analysis. Please try again.", "error");
+    }
   };
 
-  const handlePhaseSelect = (phase: WorkflowPhase) => {
-    setSelectedPhase(phase);
-    setCurrentProject(prev => ({
-      ...prev,
-      currentPhase: phase.id,
-      progress: calculateOverallProgress(),
-    }));
-    addNotification(`Focused on Phase ${phase.id}: ${phase.title}`, "info");
+  // AI Analysis Generation Function
+  const generateCompanyAnalysis = async (data: any) => {
+    // This would call your Claude API to generate comprehensive analysis
+    const response = await fetch("/api/generate-analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate analysis");
+    }
+
+    return await response.json();
   };
 
-  const handleViewPhaseDetails = (phase: WorkflowPhase) => {
-    setSelectedPhase(phase);
+  // Handle company selection change
+  const handleCompanyChange = async (companyId: string) => {
+    const company = companies.find(c => c.id === companyId);
+    if (company) {
+      setSelectedCompany(companyId);
+      await loadCompanyData(company);
+      addNotification(`Switched to ${company.clientName} analysis`, "info");
+    }
+  };
+
+  // Other handlers
+  const handlePhaseSelect = (phase: UIWorkflowPhase) => {
+    if (currentProject) {
+      setCurrentProject(prev =>
+        prev
+          ? {
+              ...prev,
+              currentPhase: phase.id,
+            }
+          : null
+      );
+      addNotification(`Focused on Phase ${phase.id}: ${phase.title}`, "info");
+    }
+  };
+
+  const handleViewPhaseDetails = (phase: UIWorkflowPhase) => {
     setActiveTab("workflow");
     addNotification(`Viewing details for Phase ${phase.id}`, "info");
   };
@@ -250,26 +382,6 @@ const TransformationXPLR: React.FC = () => {
     addNotification("Analytics view " + (isAnalyticsMode ? "disabled" : "enabled"), "info");
   };
 
-  // Handle company selection change
-  const handleCompanyChange = (companyKey: string) => {
-    const companyData = COMPANY_DATASETS[companyKey as keyof typeof COMPANY_DATASETS];
-    if (companyData) {
-      setSelectedCompany(companyKey);
-      setCurrentProject(companyData.project);
-      setAIInsights(companyData.aiInsights);
-      addNotification(`Switched to ${companyData.project.clientName} analysis`, "info");
-
-      // Update workflow phases to match the new company's current phase
-      setWorkflowPhases(
-        WORKFLOW_PHASES.map(phase => ({
-          ...phase,
-          status: phase.id < companyData.project.currentPhase ? "completed" : phase.id === companyData.project.currentPhase ? "in-progress" : "pending",
-          progress: phase.id < companyData.project.currentPhase ? 100 : phase.id === companyData.project.currentPhase ? Math.floor(50 + Math.random() * 40) : 0,
-        })) as WorkflowPhase[]
-      );
-    }
-  };
-
   // Tour handlers
   const handleStartTour = (type: "onboarding" | "phase-specific" | "full-workflow" | "ai-assistant" = "full-workflow") => {
     setTourType(type);
@@ -283,6 +395,43 @@ const TransformationXPLR: React.FC = () => {
   const handleTourSkip = () => {
     setShowGuidedTour(false);
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your transformation projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no companies
+  if (companies.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50" style={{ paddingTop: "64px" }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center">
+            <Brain className="h-16 w-16 text-blue-600 mx-auto mb-6" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Transformation XPLR</h1>
+            <p className="text-xl text-gray-600 mb-8">AI-Powered Finance Transformation Platform</p>
+            <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+              Get started by adding your first company. Our AI will analyze your business and generate a comprehensive 7-phase transformation roadmap with actionable insights.
+            </p>
+            <Button onClick={handleNewProject} size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-5 w-5 mr-2" />
+              Add Your First Company
+            </Button>
+          </div>
+        </div>
+
+        {/* Onboarding Modal */}
+        <ClientOnboardingModal isVisible={showOnboarding} onClose={() => setShowOnboarding(false)} onSubmit={handleClientOnboardingSubmit} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingTop: "64px" }}>
@@ -336,109 +485,114 @@ const TransformationXPLR: React.FC = () => {
                 <Users className="h-4 w-4 mr-2" />
                 Start Full Workflow Tour
               </Button>
-              {isFirstTimeUser && (
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  Live Project
-                </Badge>
-              )}
+              <Button onClick={handleNewProject} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Company
+              </Button>
             </div>
           </div>
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="Main navigation tabs">
-            <TabsTrigger value="command-center" className="flex items-center space-x-2" role="tab">
-              <Target className="h-4 w-4" />
-              <span>Command Center</span>
-            </TabsTrigger>
-            <TabsTrigger value="workflow" className="flex items-center space-x-2" role="tab">
-              <Workflow className="h-4 w-4" />
-              <span>7-Phase Workflow</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center space-x-2" role="tab">
-              <BarChart3 className="h-4 w-4" />
-              <span>Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger value="hackett-ip" className="flex items-center space-x-2" role="tab">
-              <Database className="h-4 w-4" />
-              <span>Hackett IP</span>
-            </TabsTrigger>
-          </TabsList>
+        {currentProject && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="Main navigation tabs">
+              <TabsTrigger value="command-center" className="flex items-center space-x-2" role="tab">
+                <Target className="h-4 w-4" />
+                <span>Command Center</span>
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="flex items-center space-x-2" role="tab">
+                <Workflow className="h-4 w-4" />
+                <span>7-Phase Workflow</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center space-x-2" role="tab">
+                <BarChart3 className="h-4 w-4" />
+                <span>Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger value="hackett-ip" className="flex items-center space-x-2" role="tab">
+                <Database className="h-4 w-4" />
+                <span>Hackett IP</span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="command-center">
-            <div data-tour="company-selection">
-              <CommandCenter
-                currentProject={currentProject}
-                aiInsights={aiInsights}
-                selectedCompany={selectedCompany}
-                onNewProject={handleNewProject}
-                onShowAIAssistant={() => setShowAIAssistant(true)}
-                onExportDeck={handleExportDeck}
-                onViewAnalytics={handleViewAnalytics}
-                onCompanyChange={handleCompanyChange}
-              />
-            </div>
-          </TabsContent>
+            <TabsContent value="command-center">
+              <div data-tour="company-selection">
+                <CommandCenter
+                  currentProject={currentProject}
+                  aiInsights={aiInsights}
+                  selectedCompany={selectedCompany}
+                  onNewProject={handleNewProject}
+                  onShowAIAssistant={() => setShowAIAssistant(true)}
+                  onExportDeck={handleExportDeck}
+                  onViewAnalytics={handleViewAnalytics}
+                  onCompanyChange={handleCompanyChange}
+                />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="workflow">
-            <div data-tour="workflow-phases">
-              <WorkflowPhases
-                phases={workflowPhases}
-                currentPhase={currentProject.currentPhase}
-                onPhaseSelect={handlePhaseSelect}
-                onViewDetails={handleViewPhaseDetails}
-                onPhaseStateChange={(phaseId, status, progress) => {
-                  setWorkflowPhases(prev => prev.map(phase => (phase.id === phaseId ? { ...phase, status, progress } : phase)));
-                }}
-                onAIAssistantOpen={handleAIAssistantOpen}
-              />
-            </div>
-          </TabsContent>
+            <TabsContent value="workflow">
+              <div data-tour="workflow-phases">
+                <WorkflowPhases
+                  phases={workflowPhases}
+                  currentPhase={currentProject.currentPhase}
+                  onPhaseSelect={handlePhaseSelect}
+                  onViewDetails={handleViewPhaseDetails}
+                  onPhaseStateChange={(phaseId, status, progress) => {
+                    setWorkflowPhases(prev => prev.map(phase => (phase.id === phaseId ? { ...phase, status, progress: progress || 0 } : phase)));
+                  }}
+                  onAIAssistantOpen={handleAIAssistantOpen}
+                />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="analytics">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Analytics Dashboard</CardTitle>
-                  <CardDescription>Real-time insights and performance metrics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Analytics dashboard coming soon</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            <TabsContent value="analytics">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>AI-Generated Analytics Dashboard</CardTitle>
+                    <CardDescription>Real-time insights and performance metrics for {currentProject.clientName}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Advanced analytics dashboard coming soon</p>
+                      <p className="text-sm text-gray-500 mt-2">AI-powered insights will be displayed here</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="hackett-ip">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hackett IP Library</CardTitle>
-                  <CardDescription>Access to {currentProject.hackettIPMatches} matched intellectual property assets</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">IP library integration coming soon</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="hackett-ip">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Hackett IP Library</CardTitle>
+                    <CardDescription>
+                      Access to {currentProject.hackettIPMatches} matched intellectual property assets for {currentProject.clientName}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">AI-curated IP library integration coming soon</p>
+                      <p className="text-sm text-gray-500 mt-2">Personalized content based on your company analysis</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
 
       {/* Modals */}
-      <AIAssistant isVisible={showAIAssistant} onClose={() => setShowAIAssistant(false)} currentProject={currentProject} aiInsights={aiInsights} workflowPhases={workflowPhases} />
+      {currentProject && <AIAssistant isVisible={showAIAssistant} onClose={() => setShowAIAssistant(false)} currentProject={currentProject} aiInsights={aiInsights} workflowPhases={workflowPhases} />}
 
       <ClientOnboardingModal isVisible={showOnboarding} onClose={() => setShowOnboarding(false)} onSubmit={handleClientOnboardingSubmit} />
 
       {/* Guided Tour */}
-      <GuidedTour isVisible={showGuidedTour} tourType={tourType} onComplete={handleTourComplete} onSkip={handleTourSkip} />
+      {/* <GuidedTour tourType={tourType} onComplete={handleTourComplete} onSkip={handleTourSkip} /> */}
     </div>
   );
 };
