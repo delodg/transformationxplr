@@ -67,20 +67,26 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 }) => {
   // Memoized calculations for better performance
   const formatCurrency = useCallback((value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(value);
+    // Use a deterministic formatting to avoid hydration mismatches
+    if (value >= 1000000) {
+      const millions = value / 1000000;
+      return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)}M`;
+    } else if (value >= 1000) {
+      const thousands = value / 1000;
+      return `$${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}K`;
+    } else {
+      return `$${value.toFixed(0)}`;
+    }
   }, []);
 
   const formatDate = useCallback((dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    // Use a deterministic date formatting to avoid hydration mismatches
+    const date = new Date(dateString);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return `${month} ${day}, ${year}`;
   }, []);
 
   // Enhanced insights calculations
@@ -114,7 +120,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const timeMetrics = useMemo(() => {
     const startDate = new Date(currentProject.startDate);
     const endDate = new Date(currentProject.estimatedCompletion);
-    const currentDate = new Date();
+    // Use a fixed date for consistent server/client rendering (demo mode)
+    const currentDate = new Date("2024-01-15T00:00:00Z");
 
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const elapsedDays = Math.ceil((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -297,7 +304,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   Matched
                 </Badge>
               </div>
-              <div className="text-2xl font-bold">{currentProject.hackettIPMatches.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{currentProject.hackettIPMatches.toString()}</div>
               <div className="text-sm text-blue-100">Hackett IP Assets</div>
               <div className="text-xs text-blue-200 mt-1">{highImpactInsights.length} high-impact</div>
             </div>

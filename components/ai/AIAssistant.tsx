@@ -49,6 +49,7 @@ import {
   Search,
   Filter,
   Star,
+  Database,
 } from "lucide-react";
 import { ChatMessage, TransformationProject, AIInsight, ConversationContext, AIAssistantState, ClaudeApiRequest, ClaudeApiResponse, WorkflowPhase } from "../../types";
 
@@ -70,12 +71,35 @@ interface AIAssistantProps {
 }
 
 export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, onClose, currentProject, aiInsights, workflowPhases = [] }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Create a unique storage key for this project's conversation
+  const conversationStorageKey = `ai-conversation-${currentProject.id}`;
+
+  // Initialize messages with localStorage data if available
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedMessages = localStorage.getItem(conversationStorageKey);
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          // Convert timestamp strings back to Date objects
+          return parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading conversation from localStorage:", error);
+      }
+    }
+    return [];
+  });
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
   const [isQuickActionsExpanded, setIsQuickActionsExpanded] = useState(false);
   const [selectedActionCategory, setSelectedActionCategory] = useState<string>("all");
+  const [isLoadingConversation, setIsLoadingConversation] = useState(true);
   const [assistantState, setAssistantState] = useState<AIAssistantState>({
     isLoading: false,
     isConnected: true,
@@ -92,8 +116,8 @@ export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, 
       prefers: "actionable",
       focusAreas: [],
     },
-    sessionStartTime: new Date(),
-    lastActivity: new Date(),
+    sessionStartTime: new Date("2024-01-15T00:00:00Z"),
+    lastActivity: new Date("2024-01-15T00:00:00Z"),
     responseQuality: {
       totalResponses: 0,
       avgConfidence: 0,
@@ -104,11 +128,48 @@ export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize welcome message with enhanced markdown structure
+  // Handle project changes - load appropriate conversation history
   useEffect(() => {
-    const welcomeMessage: ChatMessage = {
-      id: "welcome",
-      content: `# 🤖 Welcome to Your AI Transformation Consultant
+    if (typeof window !== "undefined") {
+      setIsLoadingConversation(true);
+      try {
+        const savedMessages = localStorage.getItem(conversationStorageKey);
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          const messagesWithDates = parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+          }));
+          setMessages(messagesWithDates);
+        } else {
+          // No saved conversation for this project, start fresh
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error("Error loading conversation for project:", error);
+        setMessages([]);
+      }
+      setIsLoadingConversation(false);
+    }
+  }, [currentProject.id, conversationStorageKey]);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== "undefined" && messages.length > 0) {
+      try {
+        localStorage.setItem(conversationStorageKey, JSON.stringify(messages));
+      } catch (error) {
+        console.error("Error saving conversation to localStorage:", error);
+      }
+    }
+  }, [messages, conversationStorageKey]);
+
+  // Initialize welcome message with enhanced markdown structure (only if no saved messages and loading is complete)
+  useEffect(() => {
+    if (!isLoadingConversation && messages.length === 0) {
+      const welcomeMessage: ChatMessage = {
+        id: "welcome",
+        content: `# 🤖 Welcome to Your AI Transformation Consultant
 
 I'm **Axel**, your enterprise-grade AI assistant specialized in **Finance Transformation Blueprint** methodology.
 
@@ -146,14 +207,15 @@ I'm **Axel**, your enterprise-grade AI assistant specialized in **Finance Transf
 ---
 
 **💡 Tip:** Use the **Quick Actions** below to get started, or ask me anything about your transformation journey!`,
-      role: "assistant",
-      timestamp: new Date(),
-      confidence: 95,
-      relatedPhase: currentProject.currentPhase,
-    };
+        role: "assistant",
+        timestamp: new Date("2024-01-15T00:00:00Z"),
+        confidence: 95,
+        relatedPhase: currentProject.currentPhase,
+      };
 
-    setMessages([welcomeMessage]);
-  }, [currentProject, aiInsights]);
+      setMessages([welcomeMessage]);
+    }
+  }, [currentProject, aiInsights, messages.length, isLoadingConversation]);
 
   // Enhanced Quick Actions with better categorization
   const getEnhancedQuickActions = () => {
@@ -552,6 +614,15 @@ Include technology vendor recommendations, implementation roadmap, and ROI proje
     setMessages([]);
     setConversationContext(prev => ({ ...prev, questionsAsked: 0, topicsDiscussed: [] }));
 
+    // Clear localStorage data
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(conversationStorageKey);
+      } catch (error) {
+        console.error("Error clearing conversation from localStorage:", error);
+      }
+    }
+
     // Re-initialize with welcome message
     const welcomeMessage: ChatMessage = {
       id: "welcome",
@@ -594,7 +665,7 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
 
 **💡 Tip:** Use the **Quick Actions** below to get started, or ask me anything about your transformation journey!`,
       role: "assistant",
-      timestamp: new Date(),
+      timestamp: new Date("2024-01-15T00:00:00Z"),
       confidence: 95,
       relatedPhase: currentProject.currentPhase,
     };
@@ -608,6 +679,31 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
       // Could add a toast notification here
       console.log("Message copied to clipboard");
     });
+  };
+
+  // Function to export conversation history
+  const exportConversation = () => {
+    const conversationData = {
+      projectName: currentProject.clientName,
+      projectId: currentProject.id,
+      exportDate: new Date().toISOString(),
+      messages: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp.toISOString(),
+        confidence: msg.confidence,
+        relatedPhase: msg.relatedPhase,
+      })),
+    };
+
+    const dataStr = JSON.stringify(conversationData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ai-conversation-${currentProject.clientName}-${new Date().toISOString().split("T")[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   // Auto-scroll to bottom of messages when new messages arrive
@@ -664,7 +760,12 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
                   </Badge>
                   {insight.estimatedValue && (
                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                      ${insight.estimatedValue.toLocaleString()}
+                      $
+                      {insight.estimatedValue >= 1000000
+                        ? `${(insight.estimatedValue / 1000000).toFixed(1)}M`
+                        : insight.estimatedValue >= 1000
+                        ? `${(insight.estimatedValue / 1000).toFixed(0)}K`
+                        : insight.estimatedValue.toString()}
                     </Badge>
                   )}
                 </div>
@@ -723,6 +824,12 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
                   <Brain className="h-3 w-3 mr-1" />
                   {assistantState.currentModel.split("-").pop()}
                 </Badge>
+                {messages.length > 1 && (
+                  <Badge variant="outline" className="text-sm bg-gray-50 text-gray-600 border-gray-200" title="Conversation automatically saved">
+                    <Database className="h-3 w-3 mr-1" />
+                    Auto-saved
+                  </Badge>
+                )}
               </div>
             </div>
           </SheetHeader>
@@ -749,141 +856,150 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
             <TabsContent value="chat" className="flex-1 flex flex-col mt-0 min-h-0">
               {/* Chat Messages Area with enhanced design */}
               <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50/50 to-white min-h-0">
-                <div className="p-6 space-y-6">
-                  {messages.map(message => (
-                    <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[85%] rounded-xl p-4 ${message.role === "user" ? "bg-blue-600 text-white shadow-lg" : "bg-white text-gray-800 border border-gray-200 shadow-sm"}`}>
-                        {message.role === "assistant" && (
-                          <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                            <div className="flex items-center space-x-2">
-                              <div className="p-1 bg-blue-100 rounded-full">
-                                <Brain className="h-3 w-3 text-blue-600" />
+                {isLoadingConversation ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">Loading conversation history...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 space-y-6">
+                    {messages.map(message => (
+                      <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] rounded-xl p-4 ${message.role === "user" ? "bg-blue-600 text-white shadow-lg" : "bg-white text-gray-800 border border-gray-200 shadow-sm"}`}>
+                          {message.role === "assistant" && (
+                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                              <div className="flex items-center space-x-2">
+                                <div className="p-1 bg-blue-100 rounded-full">
+                                  <Brain className="h-3 w-3 text-blue-600" />
+                                </div>
+                                <span className="text-xs font-medium text-gray-600">Axel AI Assistant</span>
                               </div>
-                              <span className="text-xs font-medium text-gray-600">Axel AI Assistant</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {message.confidence && (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                  {message.confidence}% confidence
-                                </Badge>
-                              )}
-                              {message.relatedPhase && (
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
-                                  Phase {message.relatedPhase}
-                                </Badge>
-                              )}
-                              <Button variant="ghost" size="sm" onClick={() => copyMessage(message.content)} className="h-6 w-6 p-0">
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Enhanced Markdown Rendering with Better Styling */}
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          className="ai-assistant-markdown prose prose-sm max-w-none"
-                          components={{
-                            // Enhanced heading styles with conditional colors
-                            h1: ({ children }) => (
-                              <h1 className={`text-xl font-bold mb-4 pb-2 border-b ${message.role === "user" ? "text-white border-white/20" : "text-gray-900 border-gray-200"}`}>{children}</h1>
-                            ),
-                            h2: ({ children }) => <h2 className={`text-lg font-semibold mb-3 mt-6 ${message.role === "user" ? "text-white" : "text-gray-800"}`}>{children}</h2>,
-                            h3: ({ children }) => <h3 className={`text-md font-medium mb-2 mt-4 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</h3>,
-
-                            // Enhanced list styles with conditional colors
-                            ul: ({ children }) => <ul className={`list-disc list-inside space-y-1 my-3 ml-2 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</ul>,
-                            ol: ({ children }) => <ol className={`list-decimal list-inside space-y-1 my-3 ml-2 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</ol>,
-                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-
-                            // Enhanced table styles with conditional colors
-                            table: ({ children }) => (
-                              <div className="overflow-x-auto my-4">
-                                <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">{children}</table>
+                              <div className="flex items-center space-x-2">
+                                {message.confidence && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    {message.confidence}% confidence
+                                  </Badge>
+                                )}
+                                {message.relatedPhase && (
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+                                    Phase {message.relatedPhase}
+                                  </Badge>
+                                )}
+                                <Button variant="ghost" size="sm" onClick={() => copyMessage(message.content)} className="h-6 w-6 p-0">
+                                  <Copy className="h-3 w-3" />
+                                </Button>
                               </div>
-                            ),
-                            thead: ({ children }) => <thead className={message.role === "user" ? "bg-white/10" : "bg-gray-50"}>{children}</thead>,
-                            th: ({ children }) => (
-                              <th
-                                className={`px-4 py-2 text-left text-xs font-medium uppercase tracking-wider border-b ${
-                                  message.role === "user" ? "text-white/80 border-white/20" : "text-gray-500 border-gray-200"
-                                }`}
-                              >
-                                {children}
-                              </th>
-                            ),
-                            td: ({ children }) => (
-                              <td className={`px-4 py-2 text-sm border-b ${message.role === "user" ? "text-white border-white/10" : "text-gray-900 border-gray-100"}`}>{children}</td>
-                            ),
+                            </div>
+                          )}
 
-                            // Enhanced code styles with conditional colors
-                            code: ({ node, inline, className, children, ...props }: any) =>
-                              inline ? (
-                                <code className={`px-2 py-1 rounded-md text-xs font-mono font-medium ${message.role === "user" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-900"}`} {...props}>
+                          {/* Enhanced Markdown Rendering with Better Styling */}
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            className="ai-assistant-markdown prose prose-sm max-w-none"
+                            components={{
+                              // Enhanced heading styles with conditional colors
+                              h1: ({ children }) => (
+                                <h1 className={`text-xl font-bold mb-4 pb-2 border-b ${message.role === "user" ? "text-white border-white/20" : "text-gray-900 border-gray-200"}`}>{children}</h1>
+                              ),
+                              h2: ({ children }) => <h2 className={`text-lg font-semibold mb-3 mt-6 ${message.role === "user" ? "text-white" : "text-gray-800"}`}>{children}</h2>,
+                              h3: ({ children }) => <h3 className={`text-md font-medium mb-2 mt-4 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</h3>,
+
+                              // Enhanced list styles with conditional colors
+                              ul: ({ children }) => <ul className={`list-disc list-inside space-y-1 my-3 ml-2 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</ul>,
+                              ol: ({ children }) => <ol className={`list-decimal list-inside space-y-1 my-3 ml-2 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</ol>,
+                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+
+                              // Enhanced table styles with conditional colors
+                              table: ({ children }) => (
+                                <div className="overflow-x-auto my-4">
+                                  <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">{children}</table>
+                                </div>
+                              ),
+                              thead: ({ children }) => <thead className={message.role === "user" ? "bg-white/10" : "bg-gray-50"}>{children}</thead>,
+                              th: ({ children }) => (
+                                <th
+                                  className={`px-4 py-2 text-left text-xs font-medium uppercase tracking-wider border-b ${
+                                    message.role === "user" ? "text-white/80 border-white/20" : "text-gray-500 border-gray-200"
+                                  }`}
+                                >
                                   {children}
-                                </code>
-                              ) : (
-                                <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono overflow-x-auto my-3 border border-gray-200" {...props}>
-                                  {children}
-                                </code>
+                                </th>
+                              ),
+                              td: ({ children }) => (
+                                <td className={`px-4 py-2 text-sm border-b ${message.role === "user" ? "text-white border-white/10" : "text-gray-900 border-gray-100"}`}>{children}</td>
                               ),
 
-                            // Enhanced blockquote with conditional colors
-                            blockquote: ({ children }) => (
-                              <blockquote
-                                className={`border-l-4 pl-4 py-2 my-3 italic rounded-r-lg ${
-                                  message.role === "user" ? "border-white/40 bg-white/10 text-white" : "border-blue-400 bg-blue-50 text-gray-700"
-                                }`}
-                              >
-                                {children}
-                              </blockquote>
-                            ),
+                              // Enhanced code styles with conditional colors
+                              code: ({ node, inline, className, children, ...props }: any) =>
+                                inline ? (
+                                  <code className={`px-2 py-1 rounded-md text-xs font-mono font-medium ${message.role === "user" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-900"}`} {...props}>
+                                    {children}
+                                  </code>
+                                ) : (
+                                  <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono overflow-x-auto my-3 border border-gray-200" {...props}>
+                                    {children}
+                                  </code>
+                                ),
 
-                            // Enhanced paragraph spacing with conditional colors
-                            p: ({ children }) => <p className={`leading-relaxed mb-3 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</p>,
+                              // Enhanced blockquote with conditional colors
+                              blockquote: ({ children }) => (
+                                <blockquote
+                                  className={`border-l-4 pl-4 py-2 my-3 italic rounded-r-lg ${
+                                    message.role === "user" ? "border-white/40 bg-white/10 text-white" : "border-blue-400 bg-blue-50 text-gray-700"
+                                  }`}
+                                >
+                                  {children}
+                                </blockquote>
+                              ),
 
-                            // Enhanced strong/bold text with conditional colors
-                            strong: ({ children }) => <strong className={`font-semibold ${message.role === "user" ? "text-white" : "text-gray-900"}`}>{children}</strong>,
+                              // Enhanced paragraph spacing with conditional colors
+                              p: ({ children }) => <p className={`leading-relaxed mb-3 ${message.role === "user" ? "text-white" : "text-gray-700"}`}>{children}</p>,
 
-                            // Enhanced em/italic text
-                            em: ({ children }) => <em className={`italic ${message.role === "user" ? "text-white" : "text-gray-800"}`}>{children}</em>,
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
+                              // Enhanced strong/bold text with conditional colors
+                              strong: ({ children }) => <strong className={`font-semibold ${message.role === "user" ? "text-white" : "text-gray-900"}`}>{children}</strong>,
 
-                        {message.error && (
-                          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-center space-x-2">
-                              <AlertCircle className="h-4 w-4 text-red-500" />
-                              <span className="text-xs text-red-700">{message.fallback ? "Using fallback response" : "Error occurred"}</span>
+                              // Enhanced em/italic text
+                              em: ({ children }) => <em className={`italic ${message.role === "user" ? "text-white" : "text-gray-800"}`}>{children}</em>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+
+                          {message.error && (
+                            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-center space-x-2">
+                                <AlertCircle className="h-4 w-4 text-red-500" />
+                                <span className="text-xs text-red-700">{message.fallback ? "Using fallback response" : "Error occurred"}</span>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className="p-1 bg-blue-100 rounded-full">
-                            <Brain className="h-3 w-3 text-blue-600 animate-pulse" />
-                          </div>
-                          <span className="text-sm text-gray-600">Axel is thinking...</span>
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                          <div className="flex items-center space-x-2">
+                            <div className="p-1 bg-blue-100 rounded-full">
+                              <Brain className="h-3 w-3 text-blue-600 animate-pulse" />
+                            </div>
+                            <span className="text-sm text-gray-600">Axel is thinking...</span>
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <div ref={messagesEndRef} />
-                </div>
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
               </div>
 
               {/* Enhanced Chat Input Area */}
@@ -976,10 +1092,18 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
                               <Lightbulb className="h-3 w-3" />
                               <span>Click any action to auto-populate optimized prompts</span>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={clearConversation} className="text-xs hover:bg-red-50 hover:text-red-600">
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Clear Chat
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                              {messages.length > 1 && (
+                                <Button variant="ghost" size="sm" onClick={exportConversation} className="text-xs hover:bg-blue-50 hover:text-blue-600">
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Export
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" onClick={clearConversation} className="text-xs hover:bg-red-50 hover:text-red-600">
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Clear Chat
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CollapsibleContent>

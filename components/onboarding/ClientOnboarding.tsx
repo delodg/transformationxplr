@@ -9,32 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Brain,
-  Building,
-  Users,
-  DollarSign,
-  Calendar,
-  Target,
-  Zap,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  ArrowRight,
-  Sparkles,
-  Database,
-  Globe,
-  Settings,
-  FileText,
-  Lightbulb,
-} from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Brain, Building, Users, DollarSign, Calendar, Target, Zap, TrendingUp, AlertCircle, CheckCircle, ArrowRight, Sparkles, Database, Globe, Settings, FileText, Lightbulb } from "lucide-react";
 import { ClientOnboarding } from "../../types";
 
 interface ClientOnboardingProps {
@@ -43,11 +19,7 @@ interface ClientOnboardingProps {
   onSubmit: (data: ClientOnboarding) => void;
 }
 
-export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
-  isVisible,
-  onClose,
-  onSubmit,
-}) => {
+export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisible, onClose, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ClientOnboarding>({
     companyName: "",
@@ -88,27 +60,9 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
     "Government",
   ];
 
-  const regions = [
-    "North America",
-    "Europe",
-    "Asia Pacific",
-    "Latin America",
-    "Middle East & Africa",
-    "Global",
-  ];
+  const regions = ["North America", "Europe", "Asia Pacific", "Latin America", "Middle East & Africa", "Global"];
 
-  const erpSystems = [
-    "Oracle Fusion",
-    "SAP S/4HANA",
-    "Microsoft Dynamics",
-    "Workday",
-    "NetSuite",
-    "Sage",
-    "Infor",
-    "Epicor",
-    "Legacy/Custom",
-    "Multiple Systems",
-  ];
+  const erpSystems = ["Oracle Fusion", "SAP S/4HANA", "Microsoft Dynamics", "Workday", "NetSuite", "Sage", "Infor", "Epicor", "Legacy/Custom", "Multiple Systems"];
 
   const commonPainPoints = [
     "Manual processes and lack of automation",
@@ -136,16 +90,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
     "Scale operations",
   ];
 
-  const complianceOptions = [
-    "SOX (Sarbanes-Oxley)",
-    "GAAP",
-    "IFRS",
-    "SEC Reporting",
-    "GDPR",
-    "SOC 1/2",
-    "ISO 27001",
-    "Industry-specific regulations",
-  ];
+  const complianceOptions = ["SOX (Sarbanes-Oxley)", "GAAP", "IFRS", "SEC Reporting", "GDPR", "SOC 1/2", "ISO 27001", "Industry-specific regulations"];
 
   const handleInputChange = (field: keyof ClientOnboarding, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -154,39 +99,34 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
   const handleArrayChange = (field: keyof ClientOnboarding, item: string, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      [field]: checked
-        ? [...(prev[field] as string[]), item]
-        : (prev[field] as string[]).filter(i => i !== item),
+      [field]: checked ? [...(prev[field] as string[]), item] : (prev[field] as string[]).filter(i => i !== item),
     }));
   };
 
   const generateAIRecommendations = async () => {
     setIsAnalyzing(true);
-    
+
     // Simulate AI analysis based on form data
     setTimeout(() => {
-      const baseTimeline = formData.maturityLevel === "basic" ? 20 : 
-                          formData.maturityLevel === "advanced" ? 14 : 16;
-      
-      const complexityFactor = formData.painPoints.length > 6 ? 1.2 : 
-                              formData.painPoints.length < 3 ? 0.8 : 1.0;
-      
+      const baseTimeline = formData.maturityLevel === "basic" ? 20 : formData.maturityLevel === "advanced" ? 14 : 16;
+
+      const complexityFactor = formData.painPoints.length > 6 ? 1.2 : formData.painPoints.length < 3 ? 0.8 : 1.0;
+
       const estimatedWeeks = Math.round(baseTimeline * complexityFactor);
-      
-      const hackettAssets = Math.floor(800 + Math.random() * 600);
-      const estimatedValue = Math.floor((2 + Math.random() * 8) * 1000000);
-      
-      const riskLevel = formData.previousTransformations ? "low" : 
-                       formData.maturityLevel === "basic" ? "high" : "medium";
-      
+
+      const hackettAssets = 1200; // Fixed value instead of Math.floor(800 + Math.random() * 600);
+      const estimatedValue = 6000000; // Fixed value instead of Math.floor((2 + Math.random() * 8) * 1000000);
+
+      const riskLevel = formData.previousTransformations ? "low" : formData.maturityLevel === "basic" ? "high" : "medium";
+
       setAIRecommendations({
         timeline: `${estimatedWeeks} weeks`,
         hackettAssets,
         estimatedValue,
         riskLevel,
-        confidence: Math.floor(85 + Math.random() * 10),
+        confidence: 92, // Fixed value instead of Math.floor(85 + Math.random() * 10),
       });
-      
+
       setIsAnalyzing(false);
     }, 2000);
   };
@@ -227,12 +167,16 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(value);
+    // Use deterministic formatting to avoid hydration mismatches
+    if (value >= 1000000) {
+      const millions = value / 1000000;
+      return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)}M`;
+    } else if (value >= 1000) {
+      const thousands = value / 1000;
+      return `$${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}K`;
+    } else {
+      return `$${value.toFixed(0)}`;
+    }
   };
 
   return (
@@ -243,15 +187,13 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
             <Brain className="h-5 w-5 text-purple-600" />
             <span>AI-Powered Project Setup</span>
           </DialogTitle>
-          <DialogDescription>
-            Let's gather information about your organization to provide intelligent recommendations
-          </DialogDescription>
+          <DialogDescription>Let's gather information about your organization to provide intelligent recommendations</DialogDescription>
         </DialogHeader>
 
         {/* Progress Indicator */}
         <div className="analytics-metric-card p-4 mb-6">
           <div className="flex items-center justify-between">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3, 4].map(step => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-300 ${
@@ -267,9 +209,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                 {step < 4 && (
                   <div className="w-20 h-2 mx-3 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        step < currentStep ? "bg-gradient-to-r from-purple-600 to-purple-700" : "bg-gray-200"
-                      }`}
+                      className={`h-full rounded-full transition-all duration-500 ${step < currentStep ? "bg-gradient-to-r from-purple-600 to-purple-700" : "bg-gray-200"}`}
                       style={{ width: step < currentStep ? "100%" : "0%" }}
                     />
                   </div>
@@ -302,21 +242,16 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="companyName">Company Name *</Label>
-                    <Input
-                      id="companyName"
-                      value={formData.companyName}
-                      onChange={(e) => handleInputChange("companyName", e.target.value)}
-                      placeholder="Enter company name"
-                    />
+                    <Input id="companyName" value={formData.companyName} onChange={e => handleInputChange("companyName", e.target.value)} placeholder="Enter company name" />
                   </div>
                   <div>
                     <Label htmlFor="industry">Industry *</Label>
-                    <Select value={formData.industry} onValueChange={(value) => handleInputChange("industry", value)}>
+                    <Select value={formData.industry} onValueChange={value => handleInputChange("industry", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select industry" />
                       </SelectTrigger>
                       <SelectContent>
-                        {industries.map((industry) => (
+                        {industries.map(industry => (
                           <SelectItem key={industry} value={industry}>
                             {industry}
                           </SelectItem>
@@ -326,7 +261,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                   </div>
                   <div>
                     <Label htmlFor="revenue">Annual Revenue *</Label>
-                    <Select value={formData.revenue} onValueChange={(value) => handleInputChange("revenue", value)}>
+                    <Select value={formData.revenue} onValueChange={value => handleInputChange("revenue", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select revenue range" />
                       </SelectTrigger>
@@ -341,7 +276,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                   </div>
                   <div>
                     <Label htmlFor="employees">Employee Count *</Label>
-                    <Select value={formData.employees} onValueChange={(value) => handleInputChange("employees", value)}>
+                    <Select value={formData.employees} onValueChange={value => handleInputChange("employees", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select employee range" />
                       </SelectTrigger>
@@ -374,12 +309,12 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="region">Primary Region *</Label>
-                    <Select value={formData.region} onValueChange={(value) => handleInputChange("region", value)}>
+                    <Select value={formData.region} onValueChange={value => handleInputChange("region", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select primary region" />
                       </SelectTrigger>
                       <SelectContent>
-                        {regions.map((region) => (
+                        {regions.map(region => (
                           <SelectItem key={region} value={region}>
                             {region}
                           </SelectItem>
@@ -389,12 +324,12 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                   </div>
                   <div>
                     <Label htmlFor="currentERP">Current ERP System *</Label>
-                    <Select value={formData.currentERP} onValueChange={(value) => handleInputChange("currentERP", value)}>
+                    <Select value={formData.currentERP} onValueChange={value => handleInputChange("currentERP", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select ERP system" />
                       </SelectTrigger>
                       <SelectContent>
-                        {erpSystems.map((erp) => (
+                        {erpSystems.map(erp => (
                           <SelectItem key={erp} value={erp}>
                             {erp}
                           </SelectItem>
@@ -406,10 +341,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
 
                 <div>
                   <Label htmlFor="maturityLevel">Transformation Maturity Level</Label>
-                  <Select 
-                    value={formData.maturityLevel} 
-                    onValueChange={(value: "basic" | "intermediate" | "advanced") => handleInputChange("maturityLevel", value)}
-                  >
+                  <Select value={formData.maturityLevel} onValueChange={(value: "basic" | "intermediate" | "advanced") => handleInputChange("maturityLevel", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select maturity level" />
                     </SelectTrigger>
@@ -422,25 +354,19 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="previousTransformations"
-                    checked={formData.previousTransformations}
-                    onCheckedChange={(checked) => handleInputChange("previousTransformations", checked)}
-                  />
-                  <Label htmlFor="previousTransformations">
-                    Have you undergone previous finance transformation initiatives?
-                  </Label>
+                  <Checkbox id="previousTransformations" checked={formData.previousTransformations} onCheckedChange={checked => handleInputChange("previousTransformations", checked)} />
+                  <Label htmlFor="previousTransformations">Have you undergone previous finance transformation initiatives?</Label>
                 </div>
 
                 <div>
                   <Label>Compliance Requirements</Label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    {complianceOptions.map((requirement) => (
+                    {complianceOptions.map(requirement => (
                       <div key={requirement} className="flex items-center space-x-2">
                         <Checkbox
                           id={requirement}
                           checked={formData.complianceRequirements?.includes(requirement)}
-                          onCheckedChange={(checked) => handleArrayChange("complianceRequirements", requirement, !!checked)}
+                          onCheckedChange={checked => handleArrayChange("complianceRequirements", requirement, !!checked)}
                         />
                         <Label htmlFor={requirement} className="text-sm">
                           {requirement}
@@ -467,13 +393,9 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {commonPainPoints.map((painPoint) => (
+                    {commonPainPoints.map(painPoint => (
                       <div key={painPoint} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={painPoint}
-                          checked={formData.painPoints.includes(painPoint)}
-                          onCheckedChange={(checked) => handleArrayChange("painPoints", painPoint, !!checked)}
-                        />
+                        <Checkbox id={painPoint} checked={formData.painPoints.includes(painPoint)} onCheckedChange={checked => handleArrayChange("painPoints", painPoint, !!checked)} />
                         <Label htmlFor={painPoint} className="text-sm">
                           {painPoint}
                         </Label>
@@ -495,13 +417,9 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {commonObjectives.map((objective) => (
+                    {commonObjectives.map(objective => (
                       <div key={objective} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={objective}
-                          checked={formData.objectives.includes(objective)}
-                          onCheckedChange={(checked) => handleArrayChange("objectives", objective, !!checked)}
-                        />
+                        <Checkbox id={objective} checked={formData.objectives.includes(objective)} onCheckedChange={checked => handleArrayChange("objectives", objective, !!checked)} />
                         <Label htmlFor={objective} className="text-sm">
                           {objective}
                         </Label>
@@ -529,7 +447,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="timeline">Desired Timeline *</Label>
-                      <Select value={formData.timeline} onValueChange={(value) => handleInputChange("timeline", value)}>
+                      <Select value={formData.timeline} onValueChange={value => handleInputChange("timeline", value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select timeline" />
                         </SelectTrigger>
@@ -544,7 +462,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                     </div>
                     <div>
                       <Label htmlFor="budget">Budget Range *</Label>
-                      <Select value={formData.budget} onValueChange={(value) => handleInputChange("budget", value)}>
+                      <Select value={formData.budget} onValueChange={value => handleInputChange("budget", value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select budget range" />
                         </SelectTrigger>
@@ -573,62 +491,64 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                     </div>
                   </div>
                 </div>
-              ) : aiRecommendations && (
-                <div className="analytics-chart-card bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
-                  <div className="p-6 border-b border-purple-100">
-                    <div className="flex items-center justify-between">
-                      <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Sparkles className="h-5 w-5 text-purple-600" />
-                        </div>
-                        <span>AI Recommendations</span>
-                      </h3>
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                        {aiRecommendations.confidence}% confidence
-                      </Badge>
+              ) : (
+                aiRecommendations && (
+                  <div className="analytics-chart-card bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+                    <div className="p-6 border-b border-purple-100">
+                      <div className="flex items-center justify-between">
+                        <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Sparkles className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <span>AI Recommendations</span>
+                        </h3>
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          {aiRecommendations.confidence}% confidence
+                        </Badge>
+                      </div>
                     </div>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="p-4 bg-white rounded-lg border">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium text-gray-600">Recommended Timeline</span>
+                          </div>
+                          <div className="text-lg font-bold text-blue-600">{aiRecommendations.timeline}</div>
+                        </div>
+                        <div className="p-4 bg-white rounded-lg border">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Database className="h-4 w-4 text-purple-600" />
+                            <span className="text-sm font-medium text-gray-600">Hackett IP Matches</span>
+                          </div>
+                          <div className="text-lg font-bold text-purple-600">{aiRecommendations.hackettAssets}</div>
+                        </div>
+                        <div className="p-4 bg-white rounded-lg border">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium text-gray-600">Estimated Value</span>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">{formatCurrency(aiRecommendations.estimatedValue)}</div>
+                        </div>
+                        <div className="p-4 bg-white rounded-lg border">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <AlertCircle
+                              className={`h-4 w-4 ${aiRecommendations.riskLevel === "low" ? "text-green-600" : aiRecommendations.riskLevel === "medium" ? "text-yellow-600" : "text-red-600"}`}
+                            />
+                            <span className="text-sm font-medium text-gray-600">Risk Level</span>
+                          </div>
+                          <div
+                            className={`text-lg font-bold capitalize ${
+                              aiRecommendations.riskLevel === "low" ? "text-green-600" : aiRecommendations.riskLevel === "medium" ? "text-yellow-600" : "text-red-600"
+                            }`}
+                          >
+                            {aiRecommendations.riskLevel}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
                   </div>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="p-4 bg-white rounded-lg border">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Calendar className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-600">Recommended Timeline</span>
-                        </div>
-                        <div className="text-lg font-bold text-blue-600">{aiRecommendations.timeline}</div>
-                      </div>
-                      <div className="p-4 bg-white rounded-lg border">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Database className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium text-gray-600">Hackett IP Matches</span>
-                        </div>
-                        <div className="text-lg font-bold text-purple-600">{aiRecommendations.hackettAssets}</div>
-                      </div>
-                      <div className="p-4 bg-white rounded-lg border">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <DollarSign className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium text-gray-600">Estimated Value</span>
-                        </div>
-                        <div className="text-lg font-bold text-green-600">{formatCurrency(aiRecommendations.estimatedValue)}</div>
-                      </div>
-                      <div className="p-4 bg-white rounded-lg border">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <AlertCircle className={`h-4 w-4 ${
-                            aiRecommendations.riskLevel === "low" ? "text-green-600" :
-                            aiRecommendations.riskLevel === "medium" ? "text-yellow-600" : "text-red-600"
-                          }`} />
-                          <span className="text-sm font-medium text-gray-600">Risk Level</span>
-                        </div>
-                        <div className={`text-lg font-bold capitalize ${
-                          aiRecommendations.riskLevel === "low" ? "text-green-600" :
-                          aiRecommendations.riskLevel === "medium" ? "text-yellow-600" : "text-red-600"
-                        }`}>
-                          {aiRecommendations.riskLevel}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </div>
+                )
               )}
             </div>
           )}
@@ -636,23 +556,13 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
 
         {/* Navigation */}
         <div className="flex items-center justify-between pt-6 border-t">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-          >
+          <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
             Previous
           </Button>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">
-              Step {currentStep} of 4
-            </span>
+            <span className="text-sm text-gray-500">Step {currentStep} of 4</span>
           </div>
-          <Button
-            onClick={handleNext}
-            disabled={!isStepComplete(currentStep)}
-            className={currentStep === 4 ? "bg-purple-600 hover:bg-purple-700" : ""}
-          >
+          <Button onClick={handleNext} disabled={!isStepComplete(currentStep)} className={currentStep === 4 ? "bg-purple-600 hover:bg-purple-700" : ""}>
             {currentStep === 4 ? "Start Project" : "Next"}
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
@@ -660,4 +570,4 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};
