@@ -249,43 +249,56 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
         </DialogHeader>
 
         {/* Progress Indicator */}
-        <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3, 4].map((step) => (
-            <div key={step} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step <= currentStep
-                    ? "bg-purple-600 text-white"
-                    : step <= currentStep
-                    ? "bg-purple-100 text-purple-600"
-                    : "bg-gray-100 text-gray-400"
-                }`}
-              >
-                {step < currentStep ? <CheckCircle className="h-4 w-4" /> : step}
-              </div>
-              {step < 4 && (
+        <div className="analytics-metric-card p-4 mb-6">
+          <div className="flex items-center justify-between">
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className="flex items-center">
                 <div
-                  className={`w-16 h-1 mx-2 ${
-                    step < currentStep ? "bg-purple-600" : "bg-gray-200"
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                    step <= currentStep
+                      ? "bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg"
+                      : step === currentStep + 1
+                      ? "bg-purple-100 text-purple-600 border-2 border-purple-300"
+                      : "bg-gray-100 text-gray-400"
                   }`}
-                />
-              )}
-            </div>
-          ))}
+                >
+                  {step < currentStep ? <CheckCircle className="h-5 w-5" /> : step}
+                </div>
+                {step < 4 && (
+                  <div className="w-20 h-2 mx-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        step < currentStep ? "bg-gradient-to-r from-purple-600 to-purple-700" : "bg-gray-200"
+                      }`}
+                      style={{ width: step < currentStep ? "100%" : "0%" }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-3 text-sm">
+            <span className={currentStep >= 1 ? "text-purple-600 font-medium" : "text-gray-500"}>Company Info</span>
+            <span className={currentStep >= 2 ? "text-purple-600 font-medium" : "text-gray-500"}>Requirements</span>
+            <span className={currentStep >= 3 ? "text-purple-600 font-medium" : "text-gray-500"}>Objectives</span>
+            <span className={currentStep >= 4 ? "text-purple-600 font-medium" : "text-gray-500"}>AI Analysis</span>
+          </div>
         </div>
 
         {/* Step Content */}
         <div className="space-y-6">
           {currentStep === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Building className="h-5 w-5 text-blue-600" />
+            <div className="analytics-chart-card">
+              <div className="p-6 border-b border-gray-100">
+                <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Building className="h-5 w-5 text-blue-600" />
+                  </div>
                   <span>Company Information</span>
-                </CardTitle>
-                <CardDescription>Basic information about your organization</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </h3>
+                <p className="analytics-subtitle">Basic information about your organization</p>
+              </div>
+              <div className="p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="companyName">Company Name *</Label>
@@ -342,20 +355,22 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                     </Select>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {currentStep === 2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Globe className="h-5 w-5 text-green-600" />
+            <div className="analytics-chart-card">
+              <div className="p-6 border-b border-gray-100">
+                <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Globe className="h-5 w-5 text-green-600" />
+                  </div>
                   <span>Technology & Operations</span>
-                </CardTitle>
-                <CardDescription>Information about your current systems and operations</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </h3>
+                <p className="analytics-subtitle">Information about your current systems and operations</p>
+              </div>
+              <div className="p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="region">Primary Region *</Label>
@@ -434,21 +449,23 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                     ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {currentStep === 3 && (
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <AlertCircle className="h-5 w-5 text-orange-600" />
+              <div className="analytics-chart-card">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-orange-600" />
+                    </div>
                     <span>Pain Points & Challenges</span>
-                  </CardTitle>
-                  <CardDescription>Select the main challenges your organization faces</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </h3>
+                  <p className="analytics-subtitle">Select the main challenges your organization faces</p>
+                </div>
+                <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {commonPainPoints.map((painPoint) => (
                       <div key={painPoint} className="flex items-center space-x-2">
@@ -463,18 +480,20 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Target className="h-5 w-5 text-green-600" />
+              <div className="analytics-chart-card">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Target className="h-5 w-5 text-green-600" />
+                    </div>
                     <span>Transformation Objectives</span>
-                  </CardTitle>
-                  <CardDescription>What are your key goals for this transformation?</CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </h3>
+                  <p className="analytics-subtitle">What are your key goals for this transformation?</p>
+                </div>
+                <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {commonObjectives.map((objective) => (
                       <div key={objective} className="flex items-center space-x-2">
@@ -489,22 +508,24 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           )}
 
           {currentStep === 4 && (
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="analytics-chart-card">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                    </div>
                     <span>Timeline & Budget</span>
-                  </CardTitle>
-                  <CardDescription>Project constraints and expectations</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  </h3>
+                  <p className="analytics-subtitle">Project constraints and expectations</p>
+                </div>
+                <div className="p-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="timeline">Desired Timeline *</Label>
@@ -537,31 +558,36 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                       </Select>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* AI Recommendations */}
               {isAnalyzing ? (
-                <Card className="border-purple-200 bg-purple-50">
-                  <CardContent className="p-6">
+                <div className="analytics-chart-card bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                  <div className="p-8">
                     <div className="flex items-center justify-center space-x-3">
-                      <Brain className="h-6 w-6 text-purple-600 animate-pulse" />
-                      <span className="text-lg font-medium text-purple-800">AI is analyzing your requirements...</span>
+                      <div className="p-3 bg-purple-500 rounded-xl">
+                        <Brain className="h-6 w-6 text-white animate-pulse" />
+                      </div>
+                      <span className="text-lg font-semibold text-purple-800">AI is analyzing your requirements...</span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ) : aiRecommendations && (
-                <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Sparkles className="h-5 w-5 text-purple-600" />
-                      <span>AI Recommendations</span>
-                      <Badge className="bg-purple-100 text-purple-800">
+                <div className="analytics-chart-card bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+                  <div className="p-6 border-b border-purple-100">
+                    <div className="flex items-center justify-between">
+                      <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <Sparkles className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <span>AI Recommendations</span>
+                      </h3>
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                         {aiRecommendations.confidence}% confidence
                       </Badge>
-                    </CardTitle>
-                    <CardDescription>Based on your inputs and Hackett benchmark data</CardDescription>
-                  </CardHeader>
+                    </div>
+                  </div>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="p-4 bg-white rounded-lg border">
@@ -602,7 +628,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </div>
               )}
             </div>
           )}

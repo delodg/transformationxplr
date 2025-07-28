@@ -559,7 +559,9 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                 <CheckCircle2 className="h-8 w-8 text-green-500" />
               </div>
               <div className="mt-2">
-                <Progress value={phaseStats.completionRate} className="h-2" />
+                <div className="enterprise-progress-bar">
+                  <div className="progress-fill" style={{ width: `${phaseStats.completionRate}%` }}></div>
+                </div>
               </div>
             </div>
 
@@ -669,7 +671,9 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                 </Badge>
               </div>
             </div>
-            <Progress value={phaseStats.totalProgress} className="h-3 mb-2" />
+            <div className="enterprise-progress-bar mb-2">
+              <div className="progress-fill" style={{ width: `${phaseStats.totalProgress}%` }}></div>
+            </div>
             <div className="flex justify-between text-xs text-gray-500">
               <span>{phaseStats.completed} phases completed</span>
               <span>{phaseStats.inProgress} in progress</span>
@@ -787,7 +791,9 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                                     <span className="text-xs font-medium text-gray-600">Progress</span>
                                     <span className="text-xs font-bold text-gray-900">{Math.round(phase.progress)}%</span>
                                   </div>
-                                  <Progress value={phase.progress} className="h-1.5" />
+                                  <div className="enterprise-progress-bar">
+                                    <div className="progress-fill" style={{ width: `${phase.progress}%` }}></div>
+                                  </div>
                                 </div>
 
                                 {/* Duration and Key Info */}
@@ -875,7 +881,9 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                           </div>
                           <Activity className="h-8 w-8 text-blue-500" />
                         </div>
-                        <Progress value={selectedPhase.progress} className="h-2 mt-3" />
+                        <div className="enterprise-progress-bar mt-3">
+                          <div className="progress-fill" style={{ width: `${selectedPhase.progress}%` }}></div>
+                        </div>
                       </div>
 
                       <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100">

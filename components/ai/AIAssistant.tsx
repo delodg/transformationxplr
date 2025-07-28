@@ -628,7 +628,9 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                       </div>
                     )}
 
-                    <Progress value={(insights.length / aiInsights.length) * 100} className="h-2" />
+                    <div className="enterprise-progress-bar mt-2">
+                      <div className="progress-fill" style={{ width: `${(insights.length / aiInsights.length) * 100}%` }}></div>
+                    </div>
                   </div>
                 </Card>
               );
@@ -766,33 +768,35 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
 
   return (
     <Sheet open={isVisible} onOpenChange={onClose}>
-      <SheetContent className="ai-assistant-sheet p-0 flex flex-col h-full max-h-screen">
-        <div className="flex flex-col h-full min-h-0">
-          {/* Enhanced Header with API Status */}
-          <SheetHeader className="p-6 pb-4 border-b bg-gradient-to-r from-purple-50 to-blue-50 flex-shrink-0">
+      <SheetContent className="w-[920px] sm:w-[1000px] lg:w-[1200px] xl:w-[1300px] ai-assistant-sheet h-full max-h-screen min-h-0" side="right">
+        <div className="h-full flex flex-col min-h-0">
+          <SheetHeader className="flex-shrink-0 pb-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Brain className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <SheetTitle className="text-lg flex items-center space-x-2">
-                    <span>AI Assistant</span>
-                    {assistantState.apiStatus === "connected" && <CheckCircle className="h-4 w-4 text-green-500" />}
-                    {assistantState.apiStatus === "error" && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                  </SheetTitle>
-                  <SheetDescription className="text-sm">
-                    Phase {currentProject.currentPhase} • {currentProject.clientName} • {conversationContext.questionsAsked} questions asked
-                  </SheetDescription>
-                </div>
+              <div>
+                <SheetTitle className="analytics-title text-2xl flex items-center space-x-3">
+                  <div className="p-3 bg-purple-100 rounded-xl">
+                    <Brain className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <span>AI Assistant</span>
+                </SheetTitle>
+                <SheetDescription className="analytics-subtitle text-lg mt-2">Claude-powered insights for {currentProject.clientName} transformation</SheetDescription>
               </div>
               <div className="flex items-center space-x-2">
-                <Badge variant="outline" className={`${assistantState.isConnected ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}`}>
-                  <div className={`w-2 h-2 rounded-full mr-1 ${assistantState.isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></div>
-                  {assistantState.isConnected ? "Claude Online" : "Offline"}
+                <Badge
+                  variant="outline"
+                  className={`text-sm ${
+                    assistantState.apiStatus === "connected"
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : assistantState.apiStatus === "error"
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : "bg-gray-50 text-gray-600 border-gray-200"
+                  }`}
+                >
+                  {assistantState.apiStatus === "connected" ? <Wifi className="h-4 w-4 mr-1" /> : <WifiOff className="h-4 w-4 mr-1" />}
+                  {assistantState.apiStatus}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  {Math.round(currentProject.aiAcceleration)}% AI
+                <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200">
+                  {assistantState.currentModel.split("-").pop()}
                 </Badge>
               </div>
             </div>

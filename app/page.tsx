@@ -268,46 +268,57 @@ const TransformationXPLR: React.FC = () => {
     };
 
     return () => (
-      <div className="space-y-6">
+      <div className="analytics-section space-y-8">
         {/* Executive Summary Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white border-0">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <TrendingUp className="h-6 w-6 opacity-80" />
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  Live
-                </Badge>
-              </div>
-              <div className="text-2xl font-bold">{overallMetrics.completionRate}%</div>
-              <div className="text-sm opacity-80">Project Progress</div>
-              <div className="text-xs opacity-60 mt-1">vs {Math.round(overallMetrics.completionRate * 0.85)}% industry avg</div>
-            </CardContent>
-          </Card>
+        <div className="mb-8">
+          <h2 className="analytics-title text-3xl mb-2">Enterprise Analytics Dashboard</h2>
+          <p className="analytics-subtitle text-lg">Real-time insights and performance metrics for {currentProject.clientName}</p>
+        </div>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-pink-500 text-white border-0">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Zap className="h-6 w-6 opacity-80" />
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  AI
-                </Badge>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="executive-metric-card bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <TrendingUp className="h-8 w-8" />
               </div>
-              <div className="text-2xl font-bold">{Math.round(currentProject.aiAcceleration)}%</div>
-              <div className="text-sm opacity-80">AI Acceleration</div>
-              <div className="text-xs opacity-60 mt-1">{overallMetrics.timeSavings} weeks saved</div>
-            </CardContent>
-          </Card>
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                Live
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold tracking-tight">{overallMetrics.completionRate}%</div>
+              <div className="text-blue-100 font-medium">Project Progress</div>
+              <div className="text-blue-200 text-sm">vs {Math.round(overallMetrics.completionRate * 0.85)}% industry benchmark</div>
+            </div>
+          </div>
 
-          <Card className="bg-gradient-to-br from-green-500 to-emerald-500 text-white border-0">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <DollarSign className="h-6 w-6 opacity-80" />
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  Value
-                </Badge>
+          <div className="executive-metric-card bg-gradient-to-br from-purple-600 to-purple-700 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Zap className="h-8 w-8" />
               </div>
-              <div className="text-2xl font-bold">
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                AI Powered
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold tracking-tight">{Math.round(currentProject.aiAcceleration)}%</div>
+              <div className="text-purple-100 font-medium">AI Acceleration</div>
+              <div className="text-purple-200 text-sm">{overallMetrics.timeSavings} weeks saved</div>
+            </div>
+          </div>
+
+          <div className="executive-metric-card bg-gradient-to-br from-emerald-600 to-emerald-700 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <DollarSign className="h-8 w-8" />
+              </div>
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                Value
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold tracking-tight">
                 {new Intl.NumberFormat("en-US", {
                   style: "currency",
                   currency: "USD",
@@ -315,203 +326,296 @@ const TransformationXPLR: React.FC = () => {
                   maximumFractionDigits: 1,
                 }).format(overallMetrics.totalValue)}
               </div>
-              <div className="text-sm opacity-80">Identified Value</div>
-              <div className="text-xs opacity-60 mt-1">{aiInsights.filter(i => i.estimatedValue).length} opportunities</div>
-            </CardContent>
-          </Card>
+              <div className="text-emerald-100 font-medium">Identified Value</div>
+              <div className="text-emerald-200 text-sm">{aiInsights.filter(i => i.estimatedValue).length} opportunities</div>
+            </div>
+          </div>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white border-0">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Target className="h-6 w-6 opacity-80" />
-                <Badge variant="secondary" className={`bg-white/20 text-white border-white/30`}>
-                  {overallMetrics.riskScore <= 10 ? "Low" : overallMetrics.riskScore <= 20 ? "Med" : "High"}
-                </Badge>
+          <div className="executive-metric-card bg-gradient-to-br from-amber-600 to-orange-600 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Target className="h-8 w-8" />
               </div>
-              <div className="text-2xl font-bold">{overallMetrics.avgConfidence}%</div>
-              <div className="text-sm opacity-80">AI Confidence</div>
-              <div className="text-xs opacity-60 mt-1">Risk Score: {overallMetrics.riskScore}</div>
-            </CardContent>
-          </Card>
+              <Badge variant="secondary" className={`bg-white/20 text-white border-white/30 backdrop-blur-sm`}>
+                {overallMetrics.riskScore <= 10 ? "Low Risk" : overallMetrics.riskScore <= 20 ? "Med Risk" : "High Risk"}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold tracking-tight">{overallMetrics.avgConfidence}%</div>
+              <div className="text-amber-100 font-medium">AI Confidence</div>
+              <div className="text-amber-200 text-sm">Risk Score: {overallMetrics.riskScore}</div>
+            </div>
+          </div>
         </div>
 
-        {/* Detailed Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Phase Progress Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                <span>Phase Progress & AI Impact</span>
-              </CardTitle>
-              <CardDescription>7-phase workflow completion with AI acceleration metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+        {/* Detailed Analytics Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Enhanced Phase Progress Chart */}
+          <div className="analytics-chart-card">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <span>Phase Progress & AI Impact</span>
+                  </h3>
+                  <p className="analytics-subtitle">7-phase workflow completion with AI acceleration metrics</p>
+                </div>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  Real-time
+                </Badge>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-6">
                 {phaseCompletionData.map((phase, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{phase.phase}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-600">{Math.round(phase.completed)}%</span>
-                        <Badge variant="outline" className="text-xs">
-                          <Zap className="h-3 w-3 mr-1" />
-                          {Math.round(phase.aiAcceleration)}%
+                  <div key={index} className="analytics-metric-card p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ${
+                            phase.status === "completed"
+                              ? "bg-gradient-to-br from-green-500 to-emerald-600"
+                              : phase.status === "in-progress" || phase.status === "ai-enhanced"
+                              ? "bg-gradient-to-br from-blue-500 to-blue-600"
+                              : "bg-gradient-to-br from-gray-400 to-gray-500"
+                          }`}
+                        >
+                          {phase.status === "completed" ? <CheckCircle className="h-5 w-5" /> : <span className="text-sm">{index + 1}</span>}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-900">{phase.phase}</span>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                phase.status === "completed"
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : phase.status === "in-progress" || phase.status === "ai-enhanced"
+                                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                                  : "bg-gray-50 text-gray-600 border-gray-200"
+                              }`}
+                            >
+                              {phase.status.replace("-", " ").toUpperCase()}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{Math.round(phase.completed)}%</div>
+                        <Badge variant="outline" className="text-xs mt-1 bg-purple-50 text-purple-700 border-purple-200">
+                          <Zap className="h-3 w-3 mr-1" />+{Math.round(phase.aiAcceleration)}% AI
                         </Badge>
                       </div>
                     </div>
-                    <div className="relative">
-                      <Progress value={Math.round(phase.completed)} className="h-3" />
-                      <div className="absolute top-0 right-0 h-3 w-1 bg-purple-500 rounded-r" style={{ width: `${Math.min(phase.aiAcceleration / 2, 50)}%` }}></div>
+                    <div className="enterprise-progress-bar mb-2">
+                      <div className="progress-fill" style={{ width: `${Math.round(phase.completed)}%` }}></div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>Status: {phase.status}</span>
-                      <span>AI boost: +{Math.round(phase.aiAcceleration)}%</span>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>Target: 100%</span>
+                      <span>AI Acceleration: +{Math.round(phase.aiAcceleration)}%</span>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Value Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
-                <span>Value Distribution by Category</span>
-              </CardTitle>
-              <CardDescription>Estimated value breakdown across insight categories</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+          {/* Enhanced Value Distribution */}
+          <div className="analytics-chart-card">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <DollarSign className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <span>Value Distribution by Category</span>
+                  </h3>
+                  <p className="analytics-subtitle">Estimated value breakdown across insight categories</p>
+                </div>
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                  ${(overallMetrics.totalValue / 1000000).toFixed(1)}M Total
+                </Badge>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-5">
                 {Object.entries(valueMetrics).map(([category, value], index) => {
                   const percentage = (value / overallMetrics.totalValue) * 100;
-                  const colors = {
-                    automation: "bg-purple-500",
-                    opportunity: "bg-green-500",
-                    recommendation: "bg-blue-500",
-                    benchmark: "bg-yellow-500",
-                    risk: "bg-red-500",
-                  };
                   return (
-                    <div key={category} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize">{category}</span>
+                    <div key={category} className="analytics-metric-card p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-4 h-4 rounded-full ${
+                              category === "automation"
+                                ? "bg-purple-500"
+                                : category === "opportunity"
+                                ? "bg-green-500"
+                                : category === "recommendation"
+                                ? "bg-blue-500"
+                                : category === "benchmark"
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
+                            }`}
+                          ></div>
+                          <span className="text-sm font-semibold capitalize text-gray-900">{category}</span>
+                        </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold">
+                          <div className="text-lg font-bold text-gray-900">
                             {new Intl.NumberFormat("en-US", {
                               style: "currency",
                               currency: "USD",
                               notation: "compact",
+                              maximumFractionDigits: 1,
                             }).format(value)}
                           </div>
-                          <div className="text-xs text-gray-500">{Math.round(percentage)}%</div>
+                          <div className="text-sm text-gray-500">{Math.round(percentage)}% of total</div>
                         </div>
                       </div>
-                      <div className="relative h-2 bg-gray-200 rounded-full">
-                        <div className={`absolute top-0 left-0 h-2 rounded-full ${colors[category as keyof typeof colors] || "bg-gray-500"}`} style={{ width: `${percentage}%` }}></div>
+                      <div className="value-bar-container">
+                        <div className={`value-bar-fill category-${category}`} style={{ width: `${percentage}%` }}></div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Risk Analysis & Timeline Comparison */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Risk Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <span>Risk Analysis</span>
-              </CardTitle>
-              <CardDescription>Risk distribution and confidence levels</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Enhanced Risk Distribution */}
+          <div className="analytics-chart-card">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                    </div>
+                    <span>Risk Analysis</span>
+                  </h3>
+                  <p className="analytics-subtitle">Risk distribution and confidence levels</p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={`${
+                    overallMetrics.riskScore <= 10
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : overallMetrics.riskScore <= 20
+                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                      : "bg-red-50 text-red-700 border-red-200"
+                  }`}
+                >
+                  Score: {overallMetrics.riskScore}
+                </Badge>
+              </div>
+            </div>
+            <div className="p-6">
               <div className="space-y-4">
                 {Object.entries(riskDistribution).map(([level, count]) => {
-                  const colors = {
-                    high: { bg: "bg-red-100", text: "text-red-800", border: "border-red-200", bar: "bg-red-500" },
-                    medium: { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-200", bar: "bg-yellow-500" },
-                    low: { bg: "bg-green-100", text: "text-green-800", border: "border-green-200", bar: "bg-green-500" },
-                  };
-                  const color = colors[level as keyof typeof colors];
                   const percentage = (count / aiInsights.length) * 100;
-
                   return (
-                    <div key={level} className={`p-3 rounded-lg border ${color?.bg} ${color?.border}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`font-medium capitalize ${color?.text}`}>{level} Risk</span>
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-sm ${color?.text}`}>{count} insights</span>
-                          <Badge variant="outline" className="text-xs">
-                            {Math.round(percentage)}%
-                          </Badge>
+                    <div key={level} className={`risk-card risk-${level}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${level === "high" ? "bg-red-500" : level === "medium" ? "bg-yellow-500" : "bg-green-500"} text-white`}>
+                            <AlertCircle className="h-4 w-4" />
+                          </div>
+                          <span className={`font-semibold capitalize ${level === "high" ? "text-red-800" : level === "medium" ? "text-yellow-800" : "text-green-800"}`}>{level} Risk</span>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-lg font-bold ${level === "high" ? "text-red-800" : level === "medium" ? "text-yellow-800" : "text-green-800"}`}>{count}</div>
+                          <div className="text-sm text-gray-600">{Math.round(percentage)}%</div>
                         </div>
                       </div>
-                      <div className="h-2 bg-white/50 rounded-full">
-                        <div className={`h-2 rounded-full ${color?.bar}`} style={{ width: `${percentage}%` }}></div>
+                      <div className="enterprise-progress-bar">
+                        <div className="progress-fill" style={{ width: `${percentage}%` }}></div>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Brain className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm font-medium">AI Analysis Summary</span>
+              <div className="mt-6 analytics-metric-card p-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Brain className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="font-semibold text-gray-900">AI Analysis Summary</span>
                 </div>
-                <ul className="space-y-1 text-sm text-gray-600">
-                  <li>
-                    • Risk Score: {overallMetrics.riskScore} ({overallMetrics.riskScore <= 10 ? "Low" : overallMetrics.riskScore <= 20 ? "Medium" : "High"} overall risk)
-                  </li>
-                  <li>• Average Confidence: {overallMetrics.avgConfidence}% across all insights</li>
-                  <li>
-                    • Actionable Items: {aiInsights.filter(i => i.actionable).length} of {aiInsights.length} insights
-                  </li>
-                  <li>• Immediate Attention: {riskDistribution.high || 0} high-risk items</li>
-                </ul>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Risk Score:</span>
+                      <span className="font-medium">{overallMetrics.riskScore}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Confidence:</span>
+                      <span className="font-medium">{overallMetrics.avgConfidence}%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Actionable:</span>
+                      <span className="font-medium">
+                        {aiInsights.filter(i => i.actionable).length}/{aiInsights.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Critical:</span>
+                      <span className="font-medium text-red-600">{riskDistribution.high || 0}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Timeline Efficiency */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <span>Timeline Efficiency</span>
-              </CardTitle>
-              <CardDescription>Traditional vs AI-enhanced project timelines</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+          {/* Enhanced Timeline Efficiency */}
+          <div className="analytics-chart-card">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <span>Timeline Efficiency</span>
+                  </h3>
+                  <p className="analytics-subtitle">Traditional vs AI-enhanced project timelines</p>
+                </div>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {overallMetrics.timeSavings}w Saved
+                </Badge>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-5">
                 {timelineData.map((phase, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{phase.phase}</span>
+                  <div key={index} className="analytics-metric-card p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">{index + 1}</div>
+                        <span className="font-semibold text-gray-900">{phase.phase}</span>
+                      </div>
                       <div className="text-right">
-                        <div className="text-xs text-gray-500">
-                          {phase.traditional}w → {phase.aiEnhanced}w
+                        <div className="text-sm text-gray-500 mb-1">
+                          <span className="line-through text-red-500">{phase.traditional}w</span> → <span className="text-green-600 font-medium">{phase.aiEnhanced}w</span>
                         </div>
-                        <div className="text-xs font-medium text-green-600">-{Math.round(((phase.traditional - phase.aiEnhanced) / phase.traditional) * 100)}%</div>
+                        <div className="text-sm font-semibold text-green-600">-{Math.round(((phase.traditional - phase.aiEnhanced) / phase.traditional) * 100)}%</div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full relative">
-                        <div className="absolute top-0 left-0 h-2 bg-red-300 rounded-full" style={{ width: `${(phase.traditional / Math.max(...timelineData.map(t => t.traditional))) * 100}%` }}></div>
-                        <div
-                          className="absolute top-0 left-0 h-2 bg-green-500 rounded-full"
-                          style={{ width: `${(phase.aiEnhanced / Math.max(...timelineData.map(t => t.traditional))) * 100}%` }}
-                        ></div>
-                      </div>
+                    <div className="timeline-bar-container mb-2">
+                      <div className="timeline-bar-traditional" style={{ width: `${(phase.traditional / Math.max(...timelineData.map(t => t.traditional))) * 100}%` }}></div>
+                      <div className="timeline-bar-ai" style={{ width: `${(phase.aiEnhanced / Math.max(...timelineData.map(t => t.traditional))) * 100}%` }}></div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-sm text-gray-500">
                       <span>Saved: {phase.traditional - phase.aiEnhanced} weeks</span>
                       <span>AI boost: {Math.round(phase.savings)}%</span>
                     </div>
@@ -519,78 +623,131 @@ const TransformationXPLR: React.FC = () => {
                 ))}
               </div>
 
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Efficiency Summary</span>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="font-medium text-blue-800">Total Time Saved</div>
-                    <div className="text-blue-600">{overallMetrics.timeSavings} weeks</div>
+              <div className="mt-6 analytics-metric-card p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-white" />
                   </div>
-                  <div>
-                    <div className="font-medium text-blue-800">Avg Efficiency Gain</div>
-                    <div className="text-blue-600">{overallMetrics.efficiencyGain}%</div>
+                  <span className="font-semibold text-blue-900">Efficiency Summary</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-800">{overallMetrics.timeSavings}</div>
+                    <div className="text-sm text-blue-600">Weeks Saved</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-800">{overallMetrics.efficiencyGain}%</div>
+                    <div className="text-sm text-blue-600">Avg Efficiency</div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
-        {/* Performance Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-purple-600" />
-              <span>Performance Insights & Recommendations</span>
-            </CardTitle>
-            <CardDescription>AI-powered analysis and strategic recommendations for {currentProject.clientName}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-800">Strengths</span>
+        {/* Enhanced Performance Insights */}
+        <div className="analytics-chart-card">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="analytics-title text-2xl mb-2 flex items-center space-x-3">
+                  <div className="p-3 bg-purple-100 rounded-xl">
+                    <Activity className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <span>Strategic Insights & Recommendations</span>
+                </h3>
+                <p className="analytics-subtitle text-lg">AI-powered analysis and strategic recommendations for {currentProject.clientName}</p>
+              </div>
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-sm">
+                Executive Summary
+              </Badge>
+            </div>
+          </div>
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="analytics-metric-card p-6 border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-emerald-50">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-3 bg-green-500 rounded-xl">
+                    <CheckCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="font-bold text-green-900 text-lg">Key Strengths</span>
                 </div>
-                <ul className="space-y-1 text-sm text-green-700">
-                  <li>• {Math.round(currentProject.aiAcceleration)}% AI acceleration (above average)</li>
-                  <li>• {workflowPhases.filter(p => p.status === "completed").length} phases completed successfully</li>
-                  <li>• High confidence insights ({overallMetrics.avgConfidence}% avg)</li>
-                  <li>• Strong value identification pipeline</li>
+                <ul className="space-y-3 text-green-800">
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">{Math.round(currentProject.aiAcceleration)}% AI acceleration (above industry average)</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">{workflowPhases.filter(p => p.status === "completed").length} phases completed successfully</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">High confidence insights ({overallMetrics.avgConfidence}% average)</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Strong value identification pipeline</span>
+                  </li>
                 </ul>
               </div>
 
-              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <AlertCircle className="h-5 w-5 text-yellow-600" />
-                  <span className="font-medium text-yellow-800">Watch Areas</span>
+              <div className="analytics-metric-card p-6 border-l-4 border-l-yellow-500 bg-gradient-to-br from-yellow-50 to-amber-50">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-3 bg-yellow-500 rounded-xl">
+                    <AlertCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="font-bold text-yellow-900 text-lg">Watch Areas</span>
                 </div>
-                <ul className="space-y-1 text-sm text-yellow-700">
-                  <li>• {riskDistribution.medium || 0} medium-risk items need monitoring</li>
-                  <li>• Phase {currentProject.currentPhase + 1} dependency planning</li>
-                  <li>• Resource allocation for peak phases</li>
-                  <li>• Stakeholder alignment timing</li>
+                <ul className="space-y-3 text-yellow-800">
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">{riskDistribution.medium || 0} medium-risk items need monitoring</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Phase {currentProject.currentPhase + 1} dependency planning</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Resource allocation for peak phases</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Stakeholder alignment timing</span>
+                  </li>
                 </ul>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Lightbulb className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-800">Recommendations</span>
+              <div className="analytics-metric-card p-6 border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-3 bg-blue-500 rounded-xl">
+                    <Lightbulb className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="font-bold text-blue-900 text-lg">Strategic Recommendations</span>
                 </div>
-                <ul className="space-y-1 text-sm text-blue-700">
-                  <li>• Accelerate high-value automation projects</li>
-                  <li>• Increase AI adoption in Phase {currentProject.currentPhase + 1}</li>
-                  <li>• Focus on {riskDistribution.high || 0} high-risk mitigations</li>
-                  <li>• Optimize team for {overallMetrics.efficiencyGain}% efficiency</li>
+                <ul className="space-y-3 text-blue-800">
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Accelerate high-value automation projects</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Increase AI adoption in Phase {currentProject.currentPhase + 1}</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Focus on {riskDistribution.high || 0} high-risk mitigations</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-sm">Optimize team for {overallMetrics.efficiencyGain}% efficiency gain</span>
+                  </li>
                 </ul>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }, [currentProject, workflowPhases, aiInsights]);

@@ -141,15 +141,17 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   return (
     <div className="space-y-6" role="main" aria-label="Transformation XPLR Command Center">
       {/* Company Selection Header */}
-      <Card className="border-l-4 border-l-purple-500 shadow-md">
-        <CardHeader className="pb-4">
+      <div className="analytics-chart-card">
+        <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg flex items-center space-x-2">
-                <Building className="h-5 w-5 text-purple-600" />
+              <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Building className="h-5 w-5 text-purple-600" />
+                </div>
                 <span>Company Analysis Dashboard</span>
-              </CardTitle>
-              <CardDescription>Select a company to view their transformation scorecard and insights</CardDescription>
+              </h3>
+              <p className="analytics-subtitle">Select a company to view their transformation scorecard and insights</p>
             </div>
 
             <div className="flex items-center space-x-3">
@@ -168,69 +170,87 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={() => handleCompanyChange(selectedCompany)}>
+              <Button variant="outline" size="sm" onClick={() => handleCompanyChange(selectedCompany)} className="bg-white/60 hover:bg-white/80">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
             </div>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent>
+        <div className="p-6">
           <div className="flex items-center space-x-4 text-sm">
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="bg-purple-50 text-purple-600">
+              <Badge variant="outline" className="bg-purple-50 text-purple-600 border-purple-200">
                 <Globe className="h-3 w-3 mr-1" />
                 {currentProject.region}
               </Badge>
-              <Badge variant="outline" className="bg-blue-50 text-blue-600">
+              <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
                 <Briefcase className="h-3 w-3 mr-1" />
                 {currentProject.engagementType}
               </Badge>
-              <Badge variant="outline" className="bg-green-50 text-green-600">
+              <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
                 <Activity className="h-3 w-3 mr-1" />
                 Phase {currentProject.currentPhase} Active
               </Badge>
             </div>
           </div>
-        </CardContent>
-      </Card>
-      {/* Enhanced Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Button onClick={onNewProject} className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
-          <Plus className="h-6 w-6" />
-          <div className="text-center">
-            <div className="text-sm font-medium">New Project</div>
-            <div className="text-xs opacity-80">Start transformation</div>
-          </div>
-        </Button>
-
-        <Button onClick={onShowAIAssistant} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-purple-50 border-purple-200">
-          <Brain className="h-6 w-6 text-purple-600" />
-          <div className="text-center">
-            <div className="text-sm font-medium">AI Assistant</div>
-            <div className="text-xs text-gray-500">{phaseInsights.length} insights ready</div>
-          </div>
-        </Button>
-
-        <Button onClick={onExportDeck} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-green-50 border-green-200">
-          <Download className="h-6 w-6 text-green-600" />
-          <div className="text-center">
-            <div className="text-sm font-medium">Export Deck</div>
-            <div className="text-xs text-gray-500">Generate presentation</div>
-          </div>
-        </Button>
-
-        <Button onClick={onViewAnalytics} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-orange-50 border-orange-200">
-          <BarChart3 className="h-6 w-6 text-orange-600" />
-          <div className="text-center">
-            <div className="text-sm font-medium">Analytics</div>
-            <div className="text-xs text-gray-500">Performance metrics</div>
-          </div>
-        </Button>
+        </div>
       </div>
+
+      {/* Enhanced Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="analytics-metric-card p-6 cursor-pointer transition-all duration-300 hover:scale-105" onClick={onNewProject}>
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="p-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl">
+              <Plus className="h-8 w-8 text-white" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-gray-900">New Project</div>
+              <div className="text-sm text-gray-500">Start transformation</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="analytics-metric-card p-6 cursor-pointer transition-all duration-300 hover:scale-105" onClick={onShowAIAssistant}>
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="p-4 bg-gradient-to-br from-purple-600 to-violet-600 rounded-xl">
+              <Brain className="h-8 w-8 text-white" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-gray-900">AI Assistant</div>
+              <div className="text-sm text-gray-500">{phaseInsights.length} insights ready</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="analytics-metric-card p-6 cursor-pointer transition-all duration-300 hover:scale-105" onClick={onExportDeck}>
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="p-4 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl">
+              <Download className="h-8 w-8 text-white" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-gray-900">Export Deck</div>
+              <div className="text-sm text-gray-500">Generate presentation</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="analytics-metric-card p-6 cursor-pointer transition-all duration-300 hover:scale-105" onClick={onViewAnalytics}>
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="p-4 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl">
+              <BarChart3 className="h-8 w-8 text-white" />
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-gray-900">Analytics</div>
+              <div className="text-sm text-gray-500">Performance metrics</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Enhanced Hero Section */}
-      <section className="bg-blue-600 text-white rounded-2xl p-8 relative overflow-hidden" aria-labelledby="hero-heading">
+      <section className="executive-metric-card bg-gradient-to-br from-blue-600 to-blue-700 text-white relative overflow-hidden" aria-labelledby="hero-heading">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -240,12 +260,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               <p className="text-blue-100 text-lg" aria-describedby="hero-heading">
                 AI-Powered Finance Transformation Platform
               </p>
-              <div className="flex items-center space-x-2 mt-2">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+              <div className="flex items-center space-x-2 mt-3">
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                   <Activity className="h-3 w-3 mr-1" />
                   {progressStatus.status}
                 </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                   <Brain className="h-3 w-3 mr-1" />
                   AI Confidence: {averageConfidence}%
                 </Badge>
@@ -310,17 +330,19 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       </section>
 
       {/* Enhanced Project Overview */}
-      <Card className="border-l-4 border-l-blue-500 shadow-md">
-        <CardHeader>
+      <div className="analytics-chart-card">
+        <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl flex items-center space-x-2">
-                <Building className="h-5 w-5 text-blue-600" />
+              <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Building className="h-5 w-5 text-blue-600" />
+                </div>
                 <span>{currentProject.clientName}</span>
-              </CardTitle>
+              </h3>
               <div className="flex items-center space-x-2 mt-1 text-sm text-gray-500">
                 <span>{currentProject.engagementType}</span>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
                   Phase {currentProject.currentPhase}
                 </Badge>
               </div>
@@ -337,155 +359,188 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="flex items-center space-x-3">
-              <Building className="h-5 w-5 text-gray-500" />
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="analytics-metric-card p-4 flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Building className="h-5 w-5 text-blue-600" />
+              </div>
               <div>
-                <div className="font-medium">{currentProject.industry}</div>
+                <div className="font-semibold text-gray-900">{currentProject.industry}</div>
                 <div className="text-sm text-gray-500">{currentProject.region}</div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-gray-500" />
+            <div className="analytics-metric-card p-4 flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Calendar className="h-5 w-5 text-green-600" />
+              </div>
               <div>
-                <div className="font-medium">{formatDate(currentProject.startDate)}</div>
+                <div className="font-semibold text-gray-900">{formatDate(currentProject.startDate)}</div>
                 <div className="text-sm text-gray-500">Started ({timeMetrics.elapsedDays} days ago)</div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Timer className="h-5 w-5 text-gray-500" />
+            <div className="analytics-metric-card p-4 flex items-center space-x-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Timer className="h-5 w-5 text-orange-600" />
+              </div>
               <div>
-                <div className="font-medium">{formatDate(currentProject.estimatedCompletion)}</div>
+                <div className="font-semibold text-gray-900">{formatDate(currentProject.estimatedCompletion)}</div>
                 <div className="text-sm text-gray-500">{timeMetrics.remainingDays > 0 ? `${timeMetrics.remainingDays} days left` : "Past due"}</div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <DollarSign className="h-5 w-5 text-gray-500" />
+            <div className="analytics-metric-card p-4 flex items-center space-x-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+              </div>
               <div>
-                <div className="font-medium">{formatCurrency(currentProject.projectValue || totalEstimatedValue)}</div>
+                <div className="font-semibold text-gray-900">{formatCurrency(currentProject.projectValue || totalEstimatedValue)}</div>
                 <div className="text-sm text-gray-500">Project Value</div>
               </div>
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Overall Progress</span>
+          <div className="analytics-metric-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Target className="h-5 w-5 text-purple-600" />
+                </div>
+                <span className="font-semibold text-gray-900">Overall Progress</span>
+              </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">{Math.round(currentProject.progress)}%</span>
-                <Badge variant="outline" className="text-xs">
+                <span className="text-2xl font-bold text-gray-900">{Math.round(currentProject.progress)}%</span>
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${
+                    progressStatus.color === "green"
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : progressStatus.color === "blue"
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : progressStatus.color === "yellow"
+                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                      : "bg-orange-50 text-orange-700 border-orange-200"
+                  }`}
+                >
                   {progressStatus.status}
                 </Badge>
               </div>
             </div>
-            <Progress value={Math.round(currentProject.progress)} className="h-3" />
-            <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-              <span>Started: {formatDate(currentProject.startDate)}</span>
+            <div className="enterprise-progress-bar mb-3">
+              <div className="progress-fill" style={{ width: `${Math.round(currentProject.progress)}%` }}></div>
+            </div>
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <span>Started {formatDate(currentProject.startDate)}</span>
               <span>Target: {formatDate(currentProject.estimatedCompletion)}</span>
             </div>
           </div>
-
-          <div>
-            <div className="flex items-center space-x-2 mb-3">
-              <Users className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">Team Members ({currentProject.teamMembers.length})</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {currentProject.teamMembers.map((member, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {member === "AI Assistant" && <Brain className="h-3 w-3 mr-1" />}
-                  {member}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Enhanced AI Insights */}
-      <Card className="shadow-md">
-        <CardHeader>
+      <div className="analytics-chart-card">
+        <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center space-x-2">
-                <Brain className="h-5 w-5 text-purple-600" />
-                <span>AI Insights - Phase {currentProject.currentPhase}</span>
-              </CardTitle>
-              <CardDescription>Intelligent recommendations and analysis for current project phase</CardDescription>
+              <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                </div>
+                <span>AI-Powered Insights</span>
+              </h3>
+              <p className="analytics-subtitle">Intelligent recommendations and analysis for current project phase</p>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge className="bg-purple-100 text-purple-800">{phaseInsights.length} Active</Badge>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                {phaseInsights.length} Active
+              </Badge>
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                 Avg Confidence: {averageConfidence}%
               </Badge>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <div className="p-6">
           <div className="space-y-4">
             {phaseInsights.slice(0, 3).map(insight => (
-              <div key={insight.id} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border hover:shadow-sm transition-shadow">
-                <div
-                  className={`p-2 rounded-lg ${insight.impact === "high" ? "bg-red-100 text-red-600" : insight.impact === "medium" ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"}`}
-                >
-                  {insight.type === "automation" && <Zap className="h-4 w-4" />}
-                  {insight.type === "opportunity" && <Target className="h-4 w-4" />}
-                  {insight.type === "risk" && <AlertCircle className="h-4 w-4" />}
-                  {insight.type === "benchmark" && <BarChart3 className="h-4 w-4" />}
-                  {insight.type === "recommendation" && <Lightbulb className="h-4 w-4" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium">{insight.title}</h4>
-                    <div className="flex items-center space-x-2">
-                      {insight.estimatedValue && (
-                        <Badge variant="outline" className="text-green-600 border-green-200 text-xs">
-                          {formatCurrency(insight.estimatedValue)}
+              <div key={insight.id} className="analytics-metric-card p-4">
+                <div className="flex items-start space-x-4">
+                  <div
+                    className={`p-3 rounded-xl ${insight.impact === "high" ? "bg-red-100 text-red-600" : insight.impact === "medium" ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"}`}
+                  >
+                    {insight.type === "automation" && <Zap className="h-5 w-5" />}
+                    {insight.type === "opportunity" && <Target className="h-5 w-5" />}
+                    {insight.type === "risk" && <AlertCircle className="h-5 w-5" />}
+                    {insight.type === "benchmark" && <BarChart3 className="h-5 w-5" />}
+                    {insight.type === "recommendation" && <Lightbulb className="h-5 w-5" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900">{insight.title}</h4>
+                      <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+                        {insight.estimatedValue && (
+                          <Badge variant="outline" className="text-green-600 border-green-200 text-xs bg-green-50">
+                            {formatCurrency(insight.estimatedValue)}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs bg-gray-50 text-gray-600 border-gray-200">
+                          {insight.confidence}% confidence
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            insight.impact === "high"
+                              ? "text-red-600 border-red-200 bg-red-50"
+                              : insight.impact === "medium"
+                              ? "text-yellow-600 border-yellow-200 bg-yellow-50"
+                              : "text-blue-600 border-blue-200 bg-blue-50"
+                          }`}
+                        >
+                          {insight.impact} impact
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">{insight.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>Source: {insight.source}</span>
+                        {insight.timeframe && <span>Timeline: {insight.timeframe}</span>}
+                      </div>
+                      {insight.actionable && (
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Actionable
                         </Badge>
                       )}
-                      <Badge variant="outline" className="text-xs">
-                        {insight.confidence}% confidence
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${
-                          insight.impact === "high" ? "text-red-600 border-red-200" : insight.impact === "medium" ? "text-yellow-600 border-yellow-200" : "text-blue-600 border-blue-200"
-                        }`}
-                      >
-                        {insight.impact} impact
-                      </Badge>
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{insight.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span>Source: {insight.source}</span>
-                      {insight.timeframe && <span>Timeline: {insight.timeframe}</span>}
-                    </div>
-                    {insight.actionable && (
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Actionable
-                      </Badge>
-                    )}
                   </div>
                 </div>
               </div>
             ))}
 
             {phaseInsights.length > 3 && (
-              <div className="text-center">
-                <Button variant="outline" size="sm" onClick={onShowAIAssistant}>
-                  <Brain className="h-4 w-4 mr-2" />
-                  View All {phaseInsights.length} Insights
-                </Button>
+              <div className="analytics-metric-card p-4 text-center">
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                  <span>+{phaseInsights.length - 3} more insights available</span>
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            )}
+
+            {phaseInsights.length === 0 && (
+              <div className="analytics-metric-card p-8 text-center">
+                <div className="p-4 bg-gray-100 rounded-xl w-fit mx-auto mb-4">
+                  <Brain className="h-8 w-8 text-gray-400" />
+                </div>
+                <h4 className="font-semibold text-gray-900 mb-2">No insights for current phase</h4>
+                <p className="text-sm text-gray-500">AI analysis is in progress for Phase {currentProject.currentPhase}</p>
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
