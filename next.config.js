@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Remove deprecated experimental.appDir as it's default in Next.js 13+
-  experimental: {
-    optimizeCss: true,
-  },
+  // Removed experimental.optimizeCss as it was causing build errors due to missing critters dependency
 }
 
 module.exports = nextConfig
