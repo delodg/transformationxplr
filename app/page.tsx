@@ -14,21 +14,11 @@ import { ClientOnboardingModal } from "../components/onboarding/ClientOnboarding
 import { GuidedTour } from "../components/guidance/GuidedTour";
 import { useUser } from "@clerk/nextjs";
 
-// Database imports
-import {
-  getCompaniesByUser,
-  getAIInsightsByCompany,
-  getWorkflowPhasesByCompany,
-  createCompany,
-  bulkCreateAIInsights,
-  bulkCreateWorkflowPhases,
-  generateId,
-  stringifyJSONField,
-} from "../lib/db/services";
-import type { Company, AIInsight, WorkflowPhase } from "../lib/db/schema";
-
 // Types for UI compatibility
 import { TransformationProject, AIInsight as UIAIInsight, WorkflowPhase as UIWorkflowPhase } from "../types";
+
+// Utility function to generate IDs
+const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const TransformationXPLR: React.FC = () => {
   const { user, isLoaded } = useUser();
@@ -36,7 +26,7 @@ const TransformationXPLR: React.FC = () => {
   // Core application state - now database-driven
   const [activeTab, setActiveTab] = useState("command-center");
   const [selectedCompany, setSelectedCompany] = useState<string>("");
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [currentProject, setCurrentProject] = useState<TransformationProject | null>(null);
   const [workflowPhases, setWorkflowPhases] = useState<UIWorkflowPhase[]>([]);
   const [aiInsights, setAIInsights] = useState<UIAIInsight[]>([]);
@@ -88,8 +78,11 @@ const TransformationXPLR: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Load user's companies from database
-      const userCompanies = await getCompaniesByUser(user.id);
+      // Load user's companies from API
+      const response = await fetch("/api/companies");
+      if (!response.ok) throw new Error("Failed to fetch companies");
+
+      const { companies: userCompanies } = await response.json();
       setCompanies(userCompanies);
 
       if (userCompanies.length === 0) {
@@ -104,12 +97,13 @@ const TransformationXPLR: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading user data:", error);
+      addNotification("Failed to load user data", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadCompanyData = async (company: Company) => {
+  const loadCompanyData = async (company: any) => {
     try {
       // Convert database company to UI format
       const projectData: TransformationProject = {
@@ -138,9 +132,13 @@ const TransformationXPLR: React.FC = () => {
 
       setCurrentProject(projectData);
 
-      // Load AI insights for this company
-      const insights = await getAIInsightsByCompany(company.id);
-      // @ts-ignore - Database schema types need refinement
+      // Load AI insights and workflow phases for this company from API
+      const response = await fetch(`/api/companies/${company.id}`);
+      if (!response.ok) throw new Error("Failed to fetch company data");
+
+      const { insights, phases } = await response.json();
+
+      // Convert to UI format
       const uiInsights: UIAIInsight[] = insights.map((insight: any) => ({
         id: insight.id,
         type: insight.type as any,
@@ -156,9 +154,6 @@ const TransformationXPLR: React.FC = () => {
       }));
       setAIInsights(uiInsights);
 
-      // Load workflow phases for this company
-      const phases = await getWorkflowPhasesByCompany(company.id);
-      // @ts-ignore - Database schema types need refinement
       const uiPhases: UIWorkflowPhase[] = phases.map((phase: any) => ({
         id: phase.phaseNumber,
         title: phase.title,
@@ -182,6 +177,7 @@ const TransformationXPLR: React.FC = () => {
       setWorkflowPhases(uiPhases);
     } catch (error) {
       console.error("Error loading company data:", error);
+      addNotification("Failed to load company data", "error");
     }
   };
 
@@ -220,16 +216,15 @@ const TransformationXPLR: React.FC = () => {
   const handleClientOnboardingSubmit = async (data: any) => {
     try {
       addNotification("Analyzing company data with AI...", "info");
-
+      
       const companyId = generateId();
-
+      
       // Generate AI analysis based on questionnaire data
       const aiAnalysis = await generateCompanyAnalysis(data);
-
+      
       // Create company record
       const newCompanyData = {
         id: companyId,
-        userId: user.id,
         clientName: data.companyName,
         industry: data.industry,
         engagementType: "Full Transformation",
@@ -238,7 +233,7 @@ const TransformationXPLR: React.FC = () => {
         aiAcceleration: aiAnalysis.estimatedAIAcceleration,
         startDate: new Date().toISOString().split("T")[0],
         estimatedCompletion: aiAnalysis.estimatedCompletion,
-        teamMembers: stringifyJSONField([]),
+        teamMembers: JSON.stringify([]),
         hackettIPMatches: aiAnalysis.hackettMatches,
         region: data.region,
         projectValue: aiAnalysis.estimatedValue,
@@ -246,78 +241,43 @@ const TransformationXPLR: React.FC = () => {
         revenue: data.revenue,
         employees: data.employees,
         currentERP: data.currentERP,
-        painPoints: stringifyJSONField(data.painPoints || []),
-        objectives: stringifyJSONField(data.objectives || []),
+        painPoints: JSON.stringify(data.painPoints || []),
+        objectives: JSON.stringify(data.objectives || []),
         timeline: data.timeline,
         budget: data.budget,
       };
 
-      const newCompany = await createCompany(newCompanyData);
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCompanyData),
+      });
 
-      // Generate and save AI insights
-      await bulkCreateAIInsights(
-        aiAnalysis.insights.map(insight => ({
-          id: generateId(),
-          companyId: companyId,
-          type: insight.type,
-          title: insight.title,
-          description: insight.description,
-          confidence: insight.confidence,
-          impact: insight.impact,
-          source: insight.source,
-          phase: insight.phase,
-          actionable: insight.actionable,
-          estimatedValue: insight.estimatedValue,
-          timeframe: insight.timeframe,
-          dependencies: stringifyJSONField(insight.dependencies || []),
-          recommendations: stringifyJSONField(insight.recommendations || []),
-        }))
-      );
+      if (!response.ok) {
+        throw new Error('Failed to create company');
+      }
 
-      // Generate and save workflow phases
-      await bulkCreateWorkflowPhases(
-        aiAnalysis.workflowPhases.map(phase => ({
-          id: generateId(),
-          companyId: companyId,
-          phaseNumber: phase.phaseNumber,
-          title: phase.title,
-          description: phase.description,
-          status: phase.status,
-          aiAcceleration: phase.aiAcceleration,
-          duration: phase.duration,
-          traditionalDuration: phase.traditionalDuration,
-          hackettIP: stringifyJSONField(phase.hackettIP),
-          deliverables: stringifyJSONField(phase.deliverables),
-          aiSuggestions: stringifyJSONField(phase.aiSuggestions),
-          keyActivities: stringifyJSONField(phase.keyActivities),
-          dependencies: stringifyJSONField(phase.dependencies),
-          teamRole: stringifyJSONField(phase.teamRole),
-          clientTasks: stringifyJSONField(phase.clientTasks),
-          progress: 0,
-          estimatedCompletion: phase.estimatedCompletion,
-          riskFactors: stringifyJSONField(phase.riskFactors),
-          successMetrics: stringifyJSONField(phase.successMetrics),
-        }))
-      );
+      const { company: newCompany } = await response.json();
 
       // Update state
       const updatedCompanies = [...companies, newCompany];
       setCompanies(updatedCompanies);
       setSelectedCompany(newCompany.id);
       await loadCompanyData(newCompany);
-
+      
       setShowOnboarding(false);
-      addNotification(`AI analysis complete! Generated ${aiAnalysis.insights.length} insights and 7-phase roadmap for ${data.companyName}`, "success");
-
+      addNotification(`AI analysis complete! Created transformation project for ${data.companyName}`, "success");
+      
       // Auto-start onboarding tour
       setTimeout(() => {
         setTourType("onboarding");
         setShowGuidedTour(true);
       }, 2000);
       setActiveTab("command-center");
+      
     } catch (error) {
-      console.error("Error creating company analysis:", error);
-      addNotification("Error creating company analysis. Please try again.", "error");
+      console.error('Error creating company analysis:', error);
+      addNotification('Error creating company analysis. Please try again.', 'error');
     }
   };
 
