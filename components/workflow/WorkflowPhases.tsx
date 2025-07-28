@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle,
   Clock,
@@ -31,6 +34,20 @@ import {
   Plus,
   DollarSign,
   X,
+  Filter,
+  Search,
+  Download,
+  Settings,
+  MoreHorizontal,
+  Star,
+  Shield,
+  Globe,
+  Bookmark,
+  Info,
+  CheckCircle2,
+  AlertCircle,
+  Circle,
+  Loader2,
 } from "lucide-react";
 import { WorkflowPhase } from "../../types";
 import { PHASE_COLORS } from "../../constants/workflowData";
@@ -45,8 +62,18 @@ interface WorkflowPhasesProps {
 }
 
 export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentPhase, onPhaseSelect, onViewDetails, onPhaseStateChange, onAIAssistantOpen }) => {
-  const [selectedPhaseId, setSelectedPhaseId] = useState(currentPhase);
-  const [expandedPhases, setExpandedPhases] = useState<number[]>([currentPhase]);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<number>(currentPhase);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [loadingPhases, setLoadingPhases] = useState<Set<number>>(new Set());
+  const [confirmationDialog, setConfirmationDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    action: () => void;
+    type: "destructive" | "default";
+  }>({ open: false, title: "", description: "", action: () => {}, type: "default" });
 
   // Enhanced status functions
   const getStatusIcon = useCallback((status: WorkflowPhase["status"]) => {
@@ -75,45 +102,186 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
     }
   }, []);
 
-  // Enhanced calculations
+  // Enhanced phase statistics
+  const phaseStats = useMemo(() => {
+    const total = phases.length;
+    const completed = phases.filter(p => p.status === "completed").length;
+    const inProgress = phases.filter(p => p.status === "in-progress" || p.status === "ai-enhanced").length;
+    const pending = phases.filter(p => p.status === "pending").length;
+    const totalProgress = Math.round(phases.reduce((sum, phase) => sum + phase.progress, 0) / phases.length);
+    const averageAIAcceleration = Math.round(phases.reduce((sum, phase) => sum + phase.aiAcceleration, 0) / phases.length);
+    const estimatedValue = phases.reduce((sum, phase) => sum + (phase.estimatedCompletion ? 1000000 : 0), 0);
+    const criticalRisks = phases.filter(p => p.riskFactors && p.riskFactors.length > 0).length;
+
+    return {
+      total,
+      completed,
+      inProgress,
+      pending,
+      totalProgress,
+      averageAIAcceleration,
+      estimatedValue,
+      criticalRisks,
+      onTrack: inProgress + completed >= total * 0.6,
+      completionRate: (completed / total) * 100,
+    };
+  }, [phases]);
+
+  // Filtered phases based on search and filters
+  const filteredPhases = useMemo(() => {
+    return phases.filter(phase => {
+      const matchesSearch = searchQuery === "" || phase.title.toLowerCase().includes(searchQuery.toLowerCase()) || phase.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus = filterStatus === "all" || phase.status === filterStatus;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [phases, searchQuery, filterStatus]);
+
+  // Enhanced action handlers with loading states and confirmations
+  const handlePhaseAction = useCallback(async (phaseId: number, action: string, requiresConfirmation = false, confirmationMessage = "") => {
+    if (requiresConfirmation) {
+      setConfirmationDialog({
+        open: true,
+        title: `Confirm ${action}`,
+        description: confirmationMessage,
+        action: () => executePhaseAction(phaseId, action),
+        type: action.includes("reset") || action.includes("delete") ? "destructive" : "default",
+      });
+      return;
+    }
+
+    await executePhaseAction(phaseId, action);
+  }, []);
+
+  const executePhaseAction = useCallback(
+    async (phaseId: number, action: string) => {
+      setLoadingPhases(prev => new Set(Array.from(prev).concat(phaseId)));
+
+      try {
+        // Simulate API call delay for enterprise feel
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const phase = phases.find(p => p.id === phaseId);
+        if (!phase) return;
+
+        switch (action) {
+          case "start":
+            onPhaseStateChange?.(phaseId, "in-progress", 0);
+            break;
+          case "pause":
+            onPhaseStateChange?.(phaseId, "pending", phase.progress);
+            break;
+          case "complete":
+            onPhaseStateChange?.(phaseId, "completed", 100);
+            break;
+          case "reset":
+            onPhaseStateChange?.(phaseId, "pending", 0);
+            break;
+          case "ai-enhance":
+            onPhaseStateChange?.(phaseId, "ai-enhanced", phase.progress);
+            break;
+        }
+      } finally {
+        setLoadingPhases(prev => {
+          const newArray = Array.from(prev).filter(id => id !== phaseId);
+          return new Set(newArray);
+        });
+        setConfirmationDialog(prev => ({ ...prev, open: false }));
+      }
+    },
+    [phases, onPhaseStateChange]
+  );
+
+  // Add missing helper functions
   const selectedPhase = useMemo(() => {
     return phases.find(p => p.id === selectedPhaseId) || phases[0];
   }, [phases, selectedPhaseId]);
 
-  const phaseStats = useMemo(() => {
-    const completed = phases.filter(p => p.status === "completed").length;
-    const inProgress = phases.filter(p => p.status === "in-progress").length;
-    const aiEnhanced = phases.filter(p => p.status === "ai-enhanced").length;
-    const totalProgress = Math.round(phases.reduce((sum, phase) => sum + phase.progress, 0) / phases.length);
-    const averageAIAcceleration = Math.round(phases.reduce((sum, phase) => sum + phase.aiAcceleration, 0) / phases.length);
-
-    return {
-      completed,
-      inProgress,
-      aiEnhanced,
-      totalProgress,
-      averageAIAcceleration,
-      remaining: phases.length - completed - inProgress - aiEnhanced,
-    };
-  }, [phases]);
-
   const handlePhaseClick = useCallback(
     (phase: WorkflowPhase) => {
       setSelectedPhaseId(phase.id);
-      if (!expandedPhases.includes(phase.id)) {
-        setExpandedPhases(prev => [...prev, phase.id]);
-      }
+      onPhaseSelect(phase);
     },
-    [expandedPhases]
+    [onPhaseSelect]
   );
 
   const handleStartPhase = useCallback(
     (phase: WorkflowPhase) => {
-      if (phase.status === "pending" && onPhaseStateChange) {
-        onPhaseStateChange(phase.id, "in-progress", 10);
-      }
+      handlePhaseAction(phase.id, "start");
     },
-    [onPhaseStateChange]
+    [handlePhaseAction]
+  );
+
+  // Enterprise Phase Actions Component
+  const EnterprisePhaseActions = React.memo(
+    ({ phase, onAction, isLoading }: { phase: WorkflowPhase; onAction: (id: number, action: string, requiresConfirmation?: boolean, message?: string) => void; isLoading: boolean }) => {
+      if (phase.status === "completed") {
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs bg-green-50/80 border-green-200 text-green-700 hover:bg-green-100/80 backdrop-blur-sm"
+            onClick={e => {
+              e.stopPropagation();
+              onAction(phase.id, "reset", true, "Are you sure you want to reset this completed phase? This will set the progress back to 0%.");
+            }}
+            disabled={isLoading}
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        );
+      }
+
+      if (phase.status === "in-progress" || phase.status === "ai-enhanced") {
+        return (
+          <div className="flex space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs bg-orange-50/80 border-orange-200 text-orange-700 hover:bg-orange-100/80 backdrop-blur-sm"
+              onClick={e => {
+                e.stopPropagation();
+                onAction(phase.id, "pause");
+              }}
+              disabled={isLoading}
+            >
+              <PauseCircle className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs bg-green-50/80 border-green-200 text-green-700 hover:bg-green-100/80 backdrop-blur-sm"
+              onClick={e => {
+                e.stopPropagation();
+                onAction(phase.id, "complete", true, "Mark this phase as complete? This will set progress to 100%.");
+              }}
+              disabled={isLoading}
+            >
+              <CheckCircle2 className="h-3 w-3" />
+            </Button>
+          </div>
+        );
+      }
+
+      // Pending status
+      return (
+        <Button
+          variant="default"
+          size="sm"
+          className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white backdrop-blur-sm"
+          onClick={e => {
+            e.stopPropagation();
+            onAction(phase.id, "start");
+          }}
+          disabled={isLoading}
+        >
+          <PlayCircle className="h-3 w-3 mr-1" />
+          Start
+        </Button>
+      );
+    }
   );
 
   // New phase state manipulation functions
@@ -329,770 +497,651 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
   const inProgressPhases = phases.filter(p => p.status === "in-progress" || p.status === "ai-enhanced");
 
   return (
-    <div className="space-y-6">
-      {/* Enhanced Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              <div>
-                <div className="text-2xl font-bold text-blue-600">{phaseStats.totalProgress}%</div>
-                <div className="text-sm text-gray-600">Overall Progress</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <div className="text-2xl font-bold text-green-600">{phaseStats.completed}</div>
-                <div className="text-sm text-gray-600">Completed Phases</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Zap className="h-5 w-5 text-purple-600" />
-              <div>
-                <div className="text-2xl font-bold text-purple-600">{phaseStats.averageAIAcceleration}%</div>
-                <div className="text-sm text-gray-600">AI Acceleration</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-orange-600" />
-              <div>
-                <div className="text-2xl font-bold text-orange-600">{phaseStats.inProgress}</div>
-                <div className="text-sm text-gray-600">Active Phases</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Enhanced Phase Timeline - Responsive Design */}
-      <Card className="mb-8">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+    <div className="space-y-8">
+      {/* Enterprise Dashboard Header */}
+      <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50 to-blue-50">
+        <CardHeader className="pb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div>
-              <CardTitle className="text-xl font-bold text-gray-800">7-Phase Transformation Methodology</CardTitle>
-              <CardDescription className="text-sm text-gray-600 mt-1">Hackett Group's proven approach to finance transformation</CardDescription>
+              <CardTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Target className="h-5 w-5 text-white" />
+                </div>
+                <span>7-Phase Transformation Methodology</span>
+                <Badge variant="outline" className="bg-white/60 border-blue-200 text-blue-700">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI-Accelerated
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-base mt-2 flex items-center space-x-4">
+                <span>Hackett Group's proven approach to finance transformation</span>
+                <div className="flex items-center space-x-1">
+                  <div className={`w-2 h-2 rounded-full ${phaseStats.onTrack ? "bg-green-500" : "bg-amber-500"}`} />
+                  <span className="text-sm font-medium">{phaseStats.onTrack ? "On Track" : "Needs Attention"}</span>
+                </div>
+              </CardDescription>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                AI-Accelerated
-              </Badge>
-              <span className="text-sm text-gray-500">
-                {completedPhases}/{phases.length} Completed
-              </span>
+
+            {/* Quick Actions Toolbar */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 bg-white/60 rounded-lg px-3 py-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <select className="bg-transparent border-0 text-sm font-medium focus:outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                  <option value="all">All Phases</option>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="ai-enhanced">AI Enhanced</option>
+                </select>
+              </div>
+
+              <Button variant="outline" className="bg-white/60 hover:bg-white/80">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+
+              <Button variant="outline" className="bg-white/60 hover:bg-white/80">
+                <Settings className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {/* Responsive Phase Grid */}
-          <div className="phases-container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4 lg:gap-3 mb-6">
-            {phases.map((phase, index) => {
-              const isActive = phase.id === selectedPhaseId;
-              const isCompleted = phase.status === "completed";
-              const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
 
-              return (
-                <div
-                  key={phase.id}
-                  className={`
-                    phase-card relative cursor-pointer transition-all duration-300 ease-in-out group
-                    ${isActive ? "transform scale-105 z-10" : "hover:transform hover:scale-102"}
-                    min-w-[140px] sm:min-w-[160px] lg:min-w-[180px] xl:min-w-[200px]
-                  `}
-                  onClick={() => handlePhaseClick(phase)}
-                >
-                  {/* Phase Card */}
-                  <div
-                    className={`
-                      relative bg-white rounded-xl p-3 sm:p-4 border-2 transition-all duration-300
-                      ${isActive ? "border-blue-400 shadow-lg" : "border-gray-200 hover:border-gray-300 hover:shadow-md"}
-                      ${isCompleted ? "bg-green-50 border-green-200" : ""}
-                      ${isInProgress ? "bg-blue-50 border-blue-200" : ""}
-                      min-h-[280px] sm:min-h-[300px] lg:min-h-[320px] xl:min-h-[280px]
-                      flex flex-col justify-between
-                    `}
-                  >
-                    {/* Mobile Phase Number Badge */}
-                    <div className="block xl:hidden absolute -top-2 -left-2 w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
-                      {phase.id}
-                    </div>
-
-                    {/* Card Content - Top Section */}
-                    <div className="flex-1">
-                      {/* Desktop Progress Circle */}
-                      <div className="hidden xl:flex items-center justify-center mb-3">
-                        <div
-                          className={`
-                             w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300
-                             ${isCompleted ? "bg-green-100 text-green-700 border-2 border-green-300" : ""}
-                             ${isInProgress ? "bg-blue-100 text-blue-700 border-2 border-blue-300" : ""}
-                             ${!isCompleted && !isInProgress ? "bg-gray-100 text-gray-600 border-2 border-gray-300" : ""}
-                           `}
-                        >
-                          {isCompleted ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <span className="text-xs sm:text-sm">{phase.id}</span>}
-                        </div>
-                      </div>
-
-                      {/* Phase Title - Responsive Typography */}
-                      <h3 className="font-semibold text-gray-800 text-center mb-2 text-sm sm:text-base lg:text-sm xl:text-base leading-tight">{phase.title}</h3>
-
-                      {/* Status Badge */}
-                      <div className="flex justify-center mb-3">
-                        <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
-                          {phase.status.replace("-", " ")}
-                        </Badge>
-                      </div>
-
-                      {/* Progress Bar - Mobile Optimized */}
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-600">Progress</span>
-                          <span className="text-xs font-medium">{Math.round(phase.progress)}%</span>
-                        </div>
-                        <Progress value={phase.progress} className="h-1.5 sm:h-2" />
-                      </div>
-
-                      {/* Duration - Responsive Text */}
-                      <div className="text-center mb-4">
-                        <div className="text-xs text-gray-500 mb-1">Duration</div>
-                        <div className="text-xs sm:text-sm font-medium text-gray-700">{phase.duration}</div>
-                        {phase.traditionalDuration && <div className="text-xs text-green-600 font-medium">↓ {Math.round(phase.aiAcceleration)}% faster</div>}
-                      </div>
-                    </div>
-
-                    {/* Card Content - Bottom Section (Action Buttons) */}
-                    <div className="flex-shrink-0 mt-3 pt-2 border-t border-gray-100">
-                      {/* Always Visible Action Buttons - Responsive */}
-                      <div className="action-buttons flex justify-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-xs bg-gray-50 hover:bg-gray-100"
-                          onClick={e => {
-                            e.stopPropagation();
-                            onViewDetails(phase);
-                          }}
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <PhaseActionButtons phase={phase} compact={true} />
-                      </div>
-                    </div>
-                  </div>
+        <CardContent className="pt-0">
+          {/* Enhanced Metrics Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+            <div className="bg-white/70 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{phaseStats.completed}</div>
+                  <div className="text-sm text-gray-600">Completed</div>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Mobile Navigation Dots */}
-          <div className="block xl:hidden flex justify-center space-x-2 mb-4">
-            {phases.map(phase => (
-              <button
-                key={phase.id}
-                className={`
-                  w-2 h-2 rounded-full transition-all duration-200
-                  ${phase.id === selectedPhaseId ? "bg-blue-600 w-6" : "bg-gray-300 hover:bg-gray-400"}
-                `}
-                onClick={() => setSelectedPhaseId(phase.id)}
-              />
-            ))}
-          </div>
-
-          {/* Overall Progress Bar */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Overall Project Progress</span>
-              <span className="text-sm font-bold text-blue-600">{Math.round(overallProgress)}%</span>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
+              <div className="mt-2">
+                <Progress value={phaseStats.completionRate} className="h-2" />
+              </div>
             </div>
-            <Progress value={overallProgress} className="h-2 mb-2" />
+
+            <div className="bg-white/70 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{phaseStats.inProgress}</div>
+                  <div className="text-sm text-gray-600">In Progress</div>
+                </div>
+                <Activity className="h-8 w-8 text-blue-500" />
+              </div>
+              <div className="mt-2 flex items-center space-x-1">
+                <Clock className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-500">Active phases</span>
+              </div>
+            </div>
+
+            <div className="bg-white/70 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-purple-600">{phaseStats.averageAIAcceleration}%</div>
+                  <div className="text-sm text-gray-600">AI Boost</div>
+                </div>
+                <Brain className="h-8 w-8 text-purple-500" />
+              </div>
+              <div className="mt-2 flex items-center space-x-1">
+                <Zap className="h-3 w-3 text-purple-400" />
+                <span className="text-xs text-gray-500">Acceleration</span>
+              </div>
+            </div>
+
+            <div className="bg-white/70 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">{phaseStats.pending}</div>
+                  <div className="text-sm text-gray-600">Pending</div>
+                </div>
+                <Circle className="h-8 w-8 text-orange-500" />
+              </div>
+              <div className="mt-2 flex items-center space-x-1">
+                <Calendar className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-500">Upcoming</span>
+              </div>
+            </div>
+
+            <div className="bg-white/70 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-green-600">${(phaseStats.estimatedValue / 1000000).toFixed(1)}M</div>
+                  <div className="text-sm text-gray-600">Est. Value</div>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-500" />
+              </div>
+              <div className="mt-2 flex items-center space-x-1">
+                <TrendingUp className="h-3 w-3 text-green-400" />
+                <span className="text-xs text-gray-500">Projected ROI</span>
+              </div>
+            </div>
+
+            <div className="bg-white/70 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-red-600">{phaseStats.criticalRisks}</div>
+                  <div className="text-sm text-gray-600">Risks</div>
+                </div>
+                <Shield className="h-8 w-8 text-red-500" />
+              </div>
+              <div className="mt-2 flex items-center space-x-1">
+                <AlertTriangle className="h-3 w-3 text-red-400" />
+                <span className="text-xs text-gray-500">Monitoring</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Search and Advanced Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search phases, deliverables, or activities..."
+                className="w-full pl-10 pr-4 py-2 bg-white/70 border border-white/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                Showing {filteredPhases.length} of {phases.length} phases
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className="text-gray-600 hover:text-gray-900">
+                <Settings className="h-4 w-4 mr-1" />
+                Advanced
+              </Button>
+            </div>
+          </div>
+
+          {/* Overall Progress Indicator */}
+          <div className="mt-6 bg-white/70 rounded-xl p-4 border border-white/50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-800">Overall Transformation Progress</h3>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-bold text-blue-600">{phaseStats.totalProgress}%</span>
+                <Badge variant={phaseStats.onTrack ? "default" : "secondary"} className="text-xs">
+                  {phaseStats.onTrack ? "On Track" : "Behind Schedule"}
+                </Badge>
+              </div>
+            </div>
+            <Progress value={phaseStats.totalProgress} className="h-3 mb-2" />
             <div className="flex justify-between text-xs text-gray-500">
-              <span>{completedPhases} phases completed</span>
-              <span>{inProgressPhases.length} in progress</span>
+              <span>{phaseStats.completed} phases completed</span>
+              <span>{phaseStats.inProgress} in progress</span>
+              <span>{phaseStats.pending} pending</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Enhanced Detailed Phase Information */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        {/* Phase Header with Enhanced Controls */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">{selectedPhase.title}</h2>
-              <p className="text-gray-600 mt-1">{selectedPhase.description}</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className={`${getStatusColor(selectedPhase.status)} text-sm`}>
-                {selectedPhase.status.replace("-", " ").toUpperCase()}
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                {Math.round(selectedPhase.progress)}% Complete
-              </Badge>
-            </div>
-          </div>
+      {/* Two-Column Master-Detail Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Vertical Phase Cards */}
+        <div className="lg:col-span-5">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                <div>
+                  <CardTitle className="text-xl font-bold text-gray-800">Transformation Phases</CardTitle>
+                  <CardDescription className="text-sm text-gray-600 mt-1">Click any phase to view detailed information</CardDescription>
+                </div>
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 w-fit">
+                  <Activity className="h-3 w-3 mr-1" />
+                  {filteredPhases.length} Phases
+                </Badge>
+              </div>
+            </CardHeader>
 
-          {/* AI-Powered Quick Actions */}
-          <div className="bg-white/60 rounded-lg p-4 mb-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Brain className="h-5 w-5 text-purple-600" />
-              <h3 className="font-semibold text-gray-800">AI-Powered Phase Management</h3>
-              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                Enhanced
-              </Badge>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button variant="outline" size="sm" className="flex items-center space-x-2 hover:bg-blue-50 hover:border-blue-300" onClick={() => generatePhaseReport(selectedPhase.id)}>
-                <FileText className="h-4 w-4" />
-                <span>Generate Report</span>
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center space-x-2 hover:bg-green-50 hover:border-green-300" onClick={() => createActionPlan(selectedPhase.id)}>
-                <Calendar className="h-4 w-4" />
-                <span>Action Plan</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2 hover:bg-purple-50 hover:border-purple-300"
-                onClick={() => enhancePhaseContent(selectedPhase.id, "optimization")}
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Optimize</span>
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center space-x-2 hover:bg-orange-50 hover:border-orange-300" onClick={() => enhancePhaseContent(selectedPhase.id, "risks")}>
-                <AlertTriangle className="h-4 w-4" />
-                <span>Risk Analysis</span>
-              </Button>
-            </div>
-          </div>
+            <CardContent className="space-y-3">
+              {/* Vertical Phase Cards */}
+              {filteredPhases.map((phase, index) => {
+                const isActive = phase.id === selectedPhaseId;
+                const isCompleted = phase.status === "completed";
+                const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
+                const isPending = phase.status === "pending";
+                const isLoading = loadingPhases.has(phase.id);
 
-          {/* Content Enhancement Controls */}
-          <div className="bg-white/60 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <RefreshCw className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-gray-800">Content Enhancement</h3>
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                AI Assisted
-              </Badge>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-green-50" onClick={() => enhancePhaseContent(selectedPhase.id, "deliverables")}>
-                <Target className="h-4 w-4" />
-                <span>Enhance Deliverables</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-blue-50" onClick={() => enhancePhaseContent(selectedPhase.id, "activities")}>
-                <Activity className="h-4 w-4" />
-                <span>Optimize Activities</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-purple-50" onClick={() => enhancePhaseContent(selectedPhase.id, "success-criteria")}>
-                <CheckCircle className="h-4 w-4" />
-                <span>Refine Success Metrics</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-yellow-50" onClick={() => handleEnhanceWithAI(selectedPhase.id, "comprehensive-review")}>
-                <BarChart3 className="h-4 w-4" />
-                <span>Full Review</span>
-              </Button>
-            </div>
-          </div>
+                return (
+                  <div
+                    key={phase.id}
+                    className={`
+                      group relative cursor-pointer transition-all duration-300 ease-in-out
+                      ${isActive ? "transform scale-[1.02] z-10" : "hover:transform hover:scale-[1.01]"}
+                      ${isLoading ? "pointer-events-none" : ""}
+                    `}
+                    onClick={() => handlePhaseClick(phase)}
+                  >
+                    {/* Vertical Phase Card */}
+                    <Card
+                      className={`
+                        relative border-2 transition-all duration-300 shadow-md hover:shadow-lg
+                        ${isActive ? "border-blue-400 shadow-blue-100 ring-2 ring-blue-200" : "border-gray-200 hover:border-gray-300"}
+                        ${isCompleted ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200" : ""}
+                        ${isInProgress ? "bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200" : ""}
+                        ${isPending ? "bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200" : ""}
+                        ${phase.status === "ai-enhanced" ? "bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200" : ""}
+                        overflow-hidden
+                      `}
+                    >
+                      {/* Status Indicator Strip */}
+                      <div
+                        className={`
+                        absolute top-0 left-0 bottom-0 w-1
+                        ${isCompleted ? "bg-gradient-to-b from-green-400 to-emerald-500" : ""}
+                        ${isInProgress ? "bg-gradient-to-b from-blue-400 to-cyan-500" : ""}
+                        ${isPending ? "bg-gradient-to-b from-gray-300 to-slate-400" : ""}
+                        ${phase.status === "ai-enhanced" ? "bg-gradient-to-b from-purple-400 to-violet-500" : ""}
+                      `}
+                      />
+
+                      {/* Loading Overlay */}
+                      {isLoading && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20">
+                          <div className="flex items-center space-x-2">
+                            <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                            <span className="text-sm text-gray-600">Processing...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-4">
+                          {/* Phase Number and Status Icon */}
+                          <div
+                            className={`
+                            w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md flex-shrink-0
+                            ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600" : ""}
+                            ${isInProgress ? "bg-gradient-to-br from-blue-500 to-cyan-600" : ""}
+                            ${isPending ? "bg-gradient-to-br from-gray-400 to-slate-500" : ""}
+                            ${phase.status === "ai-enhanced" ? "bg-gradient-to-br from-purple-500 to-violet-600" : ""}
+                          `}
+                          >
+                            {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : <span className="text-lg">{phase.id}</span>}
+                          </div>
+
+                          {/* Phase Information */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">{phase.title}</h3>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
+                                    {phase.status.replace("-", " ").toLowerCase()}
+                                  </Badge>
+                                  {phase.aiAcceleration > 0 && (
+                                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                      <Sparkles className="h-3 w-3 mr-1" />
+                                      {Math.round(phase.aiAcceleration)}% AI
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div className="mb-2">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-gray-600">Progress</span>
+                                    <span className="text-xs font-bold text-gray-900">{Math.round(phase.progress)}%</span>
+                                  </div>
+                                  <Progress value={phase.progress} className="h-1.5" />
+                                </div>
+
+                                {/* Duration and Key Info */}
+                                <div className="flex items-center justify-between text-xs text-gray-600">
+                                  <div className="flex items-center space-x-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{phase.duration}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-3">
+                                    <span>{phase.deliverables?.length || 0} deliverables</span>
+                                    <span>{phase.keyActivities?.length || 0} activities</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex items-center space-x-1 ml-2">
+                                <EnterprisePhaseActions phase={phase} onAction={handlePhaseAction} isLoading={isLoading} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Phase Details Tabs */}
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="activities">Activities</TabsTrigger>
-          <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
-          <TabsTrigger value="team">Team & Client</TabsTrigger>
-          <TabsTrigger value="metrics">Metrics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                  <span>Key Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Progress</span>
+        {/* Right Column: Phase Details */}
+        <div className="lg:col-span-7">
+          {selectedPhase ? (
+            <Card className="border-0 shadow-lg h-fit sticky top-4">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-800 flex items-center space-x-3">
+                      <div
+                        className={`
+                        w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white shadow-md
+                        ${selectedPhase.status === "completed" ? "bg-gradient-to-br from-green-500 to-emerald-600" : ""}
+                        ${selectedPhase.status === "in-progress" || selectedPhase.status === "ai-enhanced" ? "bg-gradient-to-br from-blue-500 to-cyan-600" : ""}
+                        ${selectedPhase.status === "pending" ? "bg-gradient-to-br from-gray-400 to-slate-500" : ""}
+                      `}
+                      >
+                        {selectedPhase.status === "completed" ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-sm">{selectedPhase.id}</span>}
+                      </div>
+                      <span>
+                        Phase {selectedPhase.id}: {selectedPhase.title}
+                      </span>
+                    </CardTitle>
+                    <CardDescription className="mt-2">{selectedPhase.description}</CardDescription>
+                  </div>
                   <div className="flex items-center space-x-2">
-                    <Progress value={Math.round(selectedPhase.progress)} className="w-16 h-2" />
-                    <Badge variant="outline" className="text-xs">
-                      {Math.round(selectedPhase.progress)}%
+                    <Badge variant="outline" className={`${getStatusColor(selectedPhase.status)} text-sm`}>
+                      {selectedPhase.status.replace("-", " ").toUpperCase()}
+                    </Badge>
+                    <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200">
+                      {Math.round(selectedPhase.progress)}% Complete
                     </Badge>
                   </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Duration</span>
-                  <Badge variant="outline">{selectedPhase.duration}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Traditional</span>
-                  <Badge variant="outline" className="line-through opacity-60">
-                    {selectedPhase.traditionalDuration}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">AI Acceleration</span>
-                  <Badge className="bg-purple-100 text-purple-800">{Math.round(selectedPhase.aiAcceleration)}%</Badge>
-                </div>
-                {selectedPhase.estimatedCompletion && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Est. Completion</span>
-                    <span className="text-sm font-medium">{selectedPhase.estimatedCompletion}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <Target className="h-4 w-4 text-green-600" />
-                  <span>Deliverables ({selectedPhase.deliverables.length})</span>
-                </CardTitle>
               </CardHeader>
+
               <CardContent>
-                <div className="space-y-2">
-                  {selectedPhase.deliverables.map((deliverable, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm">{deliverable}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                <Tabs defaultValue="overview" className="w-full">
+                  <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="deliverables">Deliverables</TabsTrigger>
+                    <TabsTrigger value="activities">Activities</TabsTrigger>
+                    <TabsTrigger value="team">Team & Client</TabsTrigger>
+                    <TabsTrigger value="metrics">Metrics</TabsTrigger>
+                  </TabsList>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <Brain className="h-4 w-4 text-purple-600" />
-                  <span>Hackett IP Assets ({selectedPhase.hackettIP.length})</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {selectedPhase.hackettIP.slice(0, 4).map((asset, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span className="text-sm">{asset}</span>
-                    </div>
-                  ))}
-                  {selectedPhase.hackettIP.length > 4 && <div className="text-xs text-gray-500 mt-2">+{selectedPhase.hackettIP.length - 4} more assets</div>}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Dependencies & Risks */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {selectedPhase.dependencies.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center space-x-2">
-                    <ArrowRight className="h-4 w-4 text-orange-600" />
-                    <span>Dependencies ({selectedPhase.dependencies.length})</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {selectedPhase.dependencies.map((dependency, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                        <span className="text-sm">{dependency}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {selectedPhase.riskFactors && selectedPhase.riskFactors.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                    <span>Risk Factors ({selectedPhase.riskFactors.length})</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {selectedPhase.riskFactors.map((risk, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span className="text-sm">{risk}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="activities" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center space-x-2">
-                <Activity className="h-4 w-4 text-blue-600" />
-                <span>Key Activities & Progress ({selectedPhase.keyActivities.length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {selectedPhase.keyActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">{index + 1}</span>
-                      </div>
-                      <span className="font-medium">{activity}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="text-xs">
-                        {selectedPhase.status === "completed" ? "Done" : selectedPhase.status === "in-progress" ? "Active" : "Pending"}
-                      </Badge>
-                      {selectedPhase.status === "in-progress" && <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="ai-insights" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <Zap className="h-4 w-4 text-purple-600" />
-                  <span>Phase Synthesis & Analysis ({selectedPhase.aiSuggestions.length})</span>
-                </CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Brain className="h-4 w-4 mr-2" />
-                    Generate More Insights
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Export Analysis
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Interactive Synthesis Dashboard */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                {/* Data Sources Summary */}
-                <Card className="border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">Data Sources</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {selectedPhase.hackettIP.length} Assets
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Benchmark Data</span>
-                        <span className="font-medium">87% Complete</span>
-                      </div>
-                      <Progress value={87} className="h-1" />
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Interview Insights</span>
-                        <span className="font-medium">94% Complete</span>
-                      </div>
-                      <Progress value={94} className="h-1" />
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Survey Results</span>
-                        <span className="font-medium">78% Complete</span>
-                      </div>
-                      <Progress value={78} className="h-1" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Analysis Confidence */}
-                <Card className="border-l-4 border-l-green-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">Analysis Confidence</h4>
-                      <Badge className="bg-green-100 text-green-800 text-xs">High</Badge>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600 mb-1">92%</div>
-                      <div className="text-xs text-gray-600 mb-2">Based on {selectedPhase.hackettIP.length} IP assets</div>
-                      <Progress value={92} className="h-2" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Key Insights Count */}
-                <Card className="border-l-4 border-l-purple-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">Generated Insights</h4>
-                      <Button variant="outline" size="sm" className="h-6 text-xs">
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-purple-600">{selectedPhase.aiSuggestions.length}</div>
-                        <div className="text-xs text-gray-600">AI Suggestions</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">{Math.floor(selectedPhase.aiSuggestions.length * 0.7)}</div>
-                        <div className="text-xs text-gray-600">Actionable</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Interactive Insights Management */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">AI-Generated Insights</h4>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Activity className="h-4 w-4 mr-1" />
-                      Filter by Priority
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <BarChart3 className="h-4 w-4 mr-1" />
-                      Sort by Impact
-                    </Button>
-                  </div>
-                </div>
-
-                {selectedPhase.aiSuggestions.map((suggestion, index) => (
-                  <Card key={index} className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mt-0.5">
-                            <Brain className="h-4 w-4 text-purple-600" />
+                  <TabsContent value="overview" className="space-y-6">
+                    {/* Key Metrics Row */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold text-blue-600">{Math.round(selectedPhase.progress)}%</div>
+                            <div className="text-sm text-gray-600">Progress</div>
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <h5 className="font-medium text-sm">AI Insight #{index + 1}</h5>
-                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-200">
-                                High Priority
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                Confidence: {90 + Math.floor(Math.random() * 10)}%
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-700 mb-2">{suggestion}</p>
+                          <Activity className="h-8 w-8 text-blue-500" />
+                        </div>
+                        <Progress value={selectedPhase.progress} className="h-2 mt-3" />
+                      </div>
 
-                            {/* Interactive Elements */}
-                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                              <div className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span>Est. Impact: 2-4 weeks</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <DollarSign className="h-3 w-3" />
-                                <span>Value: ${100 + Math.floor(Math.random() * 400)}K</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <Users className="h-3 w-3" />
-                                <span>Resources: 2-3 FTE</span>
+                      <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold text-purple-600">{Math.round(selectedPhase.aiAcceleration)}%</div>
+                            <div className="text-sm text-gray-600">AI Boost</div>
+                          </div>
+                          <Sparkles className="h-8 w-8 text-purple-500" />
+                        </div>
+                        <div className="mt-2 flex items-center space-x-1">
+                          <Zap className="h-3 w-3 text-purple-400" />
+                          <span className="text-xs text-gray-500">vs Traditional</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold text-green-600">{selectedPhase.deliverables?.length || 0}</div>
+                            <div className="text-sm text-gray-600">Deliverables</div>
+                          </div>
+                          <Target className="h-8 w-8 text-green-500" />
+                        </div>
+                        <div className="mt-2 flex items-center space-x-1">
+                          <CheckCircle className="h-3 w-3 text-green-400" />
+                          <span className="text-xs text-gray-500">{selectedPhase.keyActivities?.length || 0} activities</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Duration Information */}
+                    <Card className="bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200">
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold mb-3 flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-gray-600" />
+                          <span>Timeline Information</span>
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-sm text-gray-600 mb-1">AI-Accelerated Duration</div>
+                            <div className="text-lg font-bold text-blue-600">{selectedPhase.duration}</div>
+                          </div>
+                          {selectedPhase.traditionalDuration && (
+                            <div>
+                              <div className="text-sm text-gray-600 mb-1">Traditional Duration</div>
+                              <div className="text-lg font-bold text-gray-600 line-through opacity-60">{selectedPhase.traditionalDuration}</div>
+                              <div className="text-sm text-green-600 font-medium">↓ {Math.round(selectedPhase.aiAcceleration)}% faster with AI</div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Hackett IP Assets */}
+                    <Card>
+                      <CardContent className="p-4">
+                        <h4 className="font-semibold mb-3 flex items-center space-x-2">
+                          <Brain className="h-4 w-4 text-purple-600" />
+                          <span>Hackett IP Assets ({selectedPhase.hackettIP?.length || 0})</span>
+                        </h4>
+                        <div className="grid grid-cols-1 gap-2">
+                          {selectedPhase.hackettIP?.slice(0, 6).map((asset, index) => (
+                            <div key={index} className="flex items-center space-x-3 p-2 bg-purple-50 rounded-lg border border-purple-100">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
+                              <span className="text-sm text-gray-700">{asset}</span>
+                            </div>
+                          ))}
+                          {selectedPhase.hackettIP && selectedPhase.hackettIP.length > 6 && (
+                            <div className="text-xs text-gray-500 mt-2 text-center">+{selectedPhase.hackettIP.length - 6} more IP assets available</div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="deliverables" className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedPhase.deliverables?.map((deliverable, index) => (
+                        <Card key={index} className="border-l-4 border-l-green-500">
+                          <CardContent className="p-4">
+                            <div className="flex items-start space-x-3">
+                              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <h5 className="font-medium text-gray-900 mb-1">Deliverable {index + 1}</h5>
+                                <p className="text-sm text-gray-700">{deliverable}</p>
+                                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                  <div className="flex items-center space-x-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>Due: Week {index + 1}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Users className="h-3 w-3" />
+                                    <span>Owner: Project Team</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="activities" className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedPhase.keyActivities?.map((activity, index) => (
+                        <Card key={index} className="border-l-4 border-l-blue-500">
+                          <CardContent className="p-4">
+                            <div className="flex items-start space-x-3">
+                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                                <span className="text-xs font-medium text-blue-600">{index + 1}</span>
+                              </div>
+                              <div className="flex-1">
+                                <h5 className="font-medium text-gray-900 mb-1">Activity {index + 1}</h5>
+                                <p className="text-sm text-gray-700">{activity}</p>
+                                <div className="flex items-center justify-between mt-3">
+                                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                    <div className="flex items-center space-x-1">
+                                      <Timer className="h-3 w-3" />
+                                      <span>Est. {Math.ceil((index + 1) * 0.5)} days</span>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="text-xs">
+                                    {selectedPhase.status === "completed" ? "Completed" : selectedPhase.status === "in-progress" ? "In Progress" : "Pending"}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="team" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center space-x-2">
+                            <Users className="h-4 w-4 text-blue-600" />
+                            <span>Team Responsibilities</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {selectedPhase.teamRole?.map((role, index) => (
+                              <div key={index} className="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span className="text-sm">{role}</span>
+                              </div>
+                            ))}
                           </div>
-                        </div>
+                        </CardContent>
+                      </Card>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center space-x-1">
-                          <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-                            <Target className="h-3 w-3 mr-1" />
-                            Implement
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Details
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-7 px-2 text-xs text-gray-500">
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Interactive Progress Tracking */}
-                      <div className="border-t pt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-600">Implementation Progress</span>
-                          <span className="text-xs text-gray-500">{Math.floor(Math.random() * 60)}% Complete</span>
-                        </div>
-                        <Progress value={Math.floor(Math.random() * 60)} className="h-1" />
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm" className="h-6 text-xs">
-                              <PlayCircle className="h-3 w-3 mr-1" />
-                              Start
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-6 text-xs">
-                              <Eye className="h-3 w-3 mr-1" />
-                              Track
-                            </Button>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center space-x-2">
+                            <Target className="h-4 w-4 text-green-600" />
+                            <span>Client Tasks</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {selectedPhase.clientTasks?.map((task, index) => (
+                              <div key={index} className="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-sm">{task}</span>
+                              </div>
+                            ))}
                           </div>
-                          <div className="text-xs text-gray-500">Next Review: {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
 
-                {/* Synthesis Summary */}
-                <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Sparkles className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-sm">Phase Synthesis Summary</h4>
-                        <p className="text-xs text-gray-600">AI-powered analysis of {selectedPhase.title} data and recommendations</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">{selectedPhase.hackettIP.length}</div>
-                        <div className="text-xs text-gray-600">Data Sources Analyzed</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-purple-600">{selectedPhase.aiSuggestions.length}</div>
-                        <div className="text-xs text-gray-600">Insights Generated</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">{Math.round(selectedPhase.aiAcceleration)}%</div>
-                        <div className="text-xs text-gray-600">Time Saved vs Traditional</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  <TabsContent value="metrics" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center space-x-2">
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <span>Success Metrics</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {selectedPhase.successMetrics ? (
+                            <div className="space-y-3">
+                              {selectedPhase.successMetrics.map((metric, index) => (
+                                <div key={index} className="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <span className="text-sm">{metric}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">Success metrics will be defined based on phase requirements.</p>
+                          )}
+                        </CardContent>
+                      </Card>
 
-        <TabsContent value="team" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  <span>Team Responsibilities ({selectedPhase.teamRole.length})</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {selectedPhase.teamRole.map((role, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="text-sm">{role}</span>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center space-x-2">
+                            <AlertTriangle className="h-4 w-4 text-red-600" />
+                            <span>Risk Factors</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {selectedPhase.riskFactors && selectedPhase.riskFactors.length > 0 ? (
+                            <div className="space-y-3">
+                              {selectedPhase.riskFactors.map((risk, index) => (
+                                <div key={index} className="flex items-center space-x-3 p-2 bg-red-50 rounded-lg">
+                                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                                  <span className="text-sm">{risk}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2 p-3 bg-green-50 rounded-lg">
+                              <Shield className="h-4 w-4 text-green-500" />
+                              <span className="text-sm text-green-700">No significant risks identified</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
                     </div>
-                  ))}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-0 shadow-lg h-96">
+              <CardContent className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Select a Phase</h3>
+                  <p className="text-gray-500">Click on any phase card to view detailed information</p>
                 </div>
               </CardContent>
             </Card>
+          )}
+        </div>
+      </div>
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <Target className="h-4 w-4 text-green-600" />
-                  <span>Client Tasks ({selectedPhase.clientTasks.length})</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {selectedPhase.clientTasks.map((task, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm">{task}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="metrics" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span>Success Metrics</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedPhase.successMetrics ? (
-                  <div className="space-y-2">
-                    {selectedPhase.successMetrics.map((metric, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">{metric}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Success metrics will be defined based on phase requirements.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center space-x-2">
-                  <BarChart3 className="h-4 w-4 text-purple-600" />
-                  <span>Performance Stats</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Completion Rate</span>
-                  <Badge variant="outline">{Math.round(selectedPhase.progress)}%</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">AI Acceleration</span>
-                  <Badge className="bg-purple-100 text-purple-800">{Math.round(selectedPhase.aiAcceleration)}%</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Time Saved</span>
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    {selectedPhase.traditionalDuration} → {selectedPhase.duration}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmationDialog.open} onOpenChange={open => setConfirmationDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <span>{confirmationDialog.title}</span>
+            </DialogTitle>
+            <DialogDescription>{confirmationDialog.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="space-x-2">
+            <Button variant="outline" onClick={() => setConfirmationDialog(prev => ({ ...prev, open: false }))}>
+              Cancel
+            </Button>
+            <Button variant={confirmationDialog.type === "destructive" ? "destructive" : "default"} onClick={confirmationDialog.action}>
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

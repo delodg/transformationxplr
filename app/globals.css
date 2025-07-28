@@ -5,18 +5,28 @@
 @layer base {
   :root {
     /* Custom Brand Colors */
-    --primary-blue: 219 82% 52%;              /* #235ce8 */
-    --primary-blue-light: 198 100% 49%;       /* #00a6fb */
-    --primary-blue-dark: 217 66% 31%;         /* #184389 */
-    --secondary-orange: 28 92% 50%;           /* #f4900c */
-    
+    --primary-blue: 219 82% 52%;
+    /* #235ce8 */
+    --primary-blue-light: 198 100% 49%;
+    /* #00a6fb */
+    --primary-blue-dark: 217 66% 31%;
+    /* #184389 */
+    --secondary-orange: 28 92% 50%;
+    /* #f4900c */
+
     /* Neutral Scale */
-    --neutral-50: 215 33% 97%;                /* #f4f7fb */
-    --neutral-100: 215 14% 78%;               /* #c2c8ce */
-    --neutral-200: 215 14% 69%;               /* #a6b1bc */
-    --neutral-300: 212 14% 56%;               /* #7a8e9e */
-    --neutral-400: 214 16% 34%;               /* #4a5a66*/
-    --neutral-500: 215 22% 17%;               /* #212933 */
+    --neutral-50: 215 33% 97%;
+    /* #f4f7fb */
+    --neutral-100: 215 14% 78%;
+    /* #c2c8ce */
+    --neutral-200: 215 14% 69%;
+    /* #a6b1bc */
+    --neutral-300: 212 14% 56%;
+    /* #7a8e9e */
+    --neutral-400: 214 16% 34%;
+    /* #4a5a66*/
+    --neutral-500: 215 22% 17%;
+    /* #212933 */
 
     /* Updated shadcn/ui variables using custom colors */
     --background: var(--neutral-50);
@@ -69,6 +79,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -104,6 +115,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -121,10 +133,11 @@
   0% {
     background-position: 100% 0%;
   }
+
   100% {
     background-position: -100% 0%;
   }
-} 
+}
 
 /* Custom overrides for specific components */
 .ai-assistant-sheet {
@@ -160,7 +173,7 @@
     width: 90vw !important;
     min-width: auto !important;
   }
-} 
+}
 
 /* Responsive 7-Phase Workflow Design */
 .phases-container {
@@ -182,7 +195,7 @@
 }
 
 /* Ensure all phase cards have the same height within their container */
-.phases-container .phase-card > div:first-child {
+.phases-container .phase-card>div:first-child {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -248,7 +261,7 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 12px;
   }
-  
+
   .phase-card {
     min-width: 180px;
     max-width: 220px;
@@ -261,7 +274,7 @@
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 14px;
   }
-  
+
   .phase-card {
     min-width: 200px;
   }
@@ -274,11 +287,11 @@
     gap: 12px;
     padding: 12px 0;
   }
-  
+
   .phase-card {
     min-width: 160px;
   }
-  
+
   /* Increase touch targets for mobile */
   .phase-card button {
     min-height: 44px;
@@ -293,18 +306,18 @@
     gap: 8px;
     padding: 8px 0;
   }
-  
+
   .phase-card {
     min-width: 140px;
     width: 100%;
   }
-  
+
   /* Stack action buttons vertically on very small screens */
   .phase-card .mobile-actions {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   /* Larger touch targets for small screens */
   .phase-card button {
     min-height: 48px;
@@ -319,7 +332,7 @@
     height: 28px;
     font-size: 12px;
   }
-  
+
   .phase-card .progress-circle svg {
     width: 16px;
     height: 16px;
@@ -351,7 +364,7 @@
   .phases-container {
     scroll-behavior: smooth;
   }
-} 
+}
 
 /* Markdown Styling for AI Assistant Chat */
 .ai-assistant-markdown {
@@ -462,10 +475,477 @@
 }
 
 /* Compact spacing for chat context */
-.ai-assistant-markdown > *:first-child {
+.ai-assistant-markdown>*:first-child {
   margin-top: 0;
 }
 
-.ai-assistant-markdown > *:last-child {
+.ai-assistant-markdown>*:last-child {
   margin-bottom: 0;
-} 
+}
+
+/* Enterprise-Grade 7-Phase Workflow Styles */
+
+/* Enhanced Phase Cards */
+.phase-card {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.phase-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Professional Status Colors */
+.status-completed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.status-in-progress {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.status-pending {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.status-ai-enhanced {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+/* Enhanced Dashboard Metrics */
+.dashboard-metric {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.dashboard-metric:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Professional Card Gradients */
+.enterprise-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(203, 213, 225, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.enterprise-card:hover {
+  background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Progress Indicators */
+.progress-ring {
+  transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading States */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Professional Animations */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced Hover Effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Professional Button Styles */
+.btn-enterprise {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  transition: all 0.2s ease;
+}
+
+.btn-enterprise:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border-color: rgba(148, 163, 184, 0.8);
+  transform: translateY(-1px);
+}
+
+/* AI Enhancement Glow */
+.ai-glow {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+  }
+}
+
+/* Enhanced Typography */
+.enterprise-heading {
+  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Professional Glass Effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+}
+
+/* Enhanced Connection Lines */
+.connection-line {
+  position: relative;
+}
+
+.connection-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(203, 213, 225, 0.8) 0%, rgba(203, 213, 225, 0.2) 100%);
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+}
+
+.connection-line:hover::after {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0.2) 100%);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .phase-card {
+    transform: none !important;
+  }
+
+  .phase-card:hover {
+    transform: translateY(-2px) !important;
+  }
+
+  .connection-line::after {
+    display: none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .enterprise-card {
+    border: 2px solid #000;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+  .phase-card,
+  .hover-lift,
+  .loading-shimmer {
+    animation: none;
+    transition: none;
+  }
+
+  .phase-card:hover,
+  .hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* Two-Column Master-Detail Layout */
+.master-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2rem;
+  height: 100%;
+}
+
+/* Vertical Phase Cards */
+.vertical-phase-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.vertical-phase-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.vertical-phase-card.active {
+  transform: scale(1.02);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+/* Phase Status Strips */
+.status-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  transition: width 0.3s ease;
+}
+
+.vertical-phase-card:hover .status-strip {
+  width: 6px;
+}
+
+/* Phase Details Sticky Positioning */
+.phase-details-sticky {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+/* Enhanced Tab Content */
+.phase-tab-content {
+  min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Gradient Cards for Metrics */
+.metric-card {
+  background: linear-gradient(135deg, var(--gradient-from), var(--gradient-to));
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress Rings for Vertical Cards */
+.phase-progress-ring {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.phase-progress-ring circle {
+  fill: none;
+  stroke-width: 3;
+  r: 18;
+  cx: 20;
+  cy: 20;
+  transform: rotate(-90deg);
+  transform-origin: 20px 20px;
+  stroke-dasharray: 113.1;
+  /* 2 * π * 18 */
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+/* Empty State for Phase Details */
+.phase-details-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  text-align: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
+}
+
+/* Responsive Adjustments for Master-Detail */
+@media (max-width: 1024px) {
+  .master-detail-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .phase-details-sticky {
+    position: static;
+    max-height: none;
+  }
+
+  .vertical-phase-card.active {
+    transform: scale(1.01);
+  }
+}
+
+@media (max-width: 768px) {
+  .vertical-phase-card {
+    margin-bottom: 0.75rem;
+  }
+
+  .vertical-phase-card:hover {
+    transform: translateY(-1px);
+  }
+
+  .phase-tab-content {
+    min-height: 300px;
+    max-height: 500px;
+  }
+}
+
+/* Enhanced Deliverable and Activity Cards */
+.deliverable-card,
+.activity-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.deliverable-card:hover,
+.activity-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateX(4px);
+}
+
+/* IP Asset Cards */
+.ip-asset-card {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border: 1px solid #e9d5ff;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.ip-asset-card:hover {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border-color: #d8b4fe;
+}
+
+/* Team and Client Role Cards */
+.role-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.role-card.client {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #bbf7d0;
+}
+
+.role-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Risk Factor Cards */
+.risk-card {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.risk-card:hover {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-color: #f87171;
+}
+
+/* Success Metric Cards */
+.success-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.success-card:hover {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #86efac;
+}
+
+/* Smooth scroll for tab content */
+.phase-tab-content {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for phase details */
+.phase-tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.phase-tab-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.phase-tab-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.phase-tab-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

@@ -230,7 +230,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         </Button>
       </div>
       {/* Enhanced Hero Section */}
-      <section className="bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 text-white rounded-2xl p-8 relative overflow-hidden" aria-labelledby="hero-heading">
+      <section className="bg-blue-600 text-white rounded-2xl p-8 relative overflow-hidden" aria-labelledby="hero-heading">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div>
