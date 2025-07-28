@@ -13,6 +13,7 @@ import { CommandCenter } from "../components/workflow/CommandCenter";
 import { WorkflowPhases } from "../components/workflow/WorkflowPhases";
 import { AIAssistant } from "../components/ai/AIAssistant";
 import { ClientOnboardingModal } from "../components/onboarding/ClientOnboarding";
+import { GuidedTour } from "../components/guidance/GuidedTour";
 
 // Import types and data
 import { TransformationProject, AIInsight, WorkflowPhase, ClientOnboarding } from "../types";
@@ -35,6 +36,11 @@ const TransformationXPLR: React.FC = () => {
   const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string; type: "success" | "info" | "warning" | "error"; timestamp: string }[]>([]);
 
+  // Guided tour state
+  const [showGuidedTour, setShowGuidedTour] = useState(false);
+  const [tourType, setTourType] = useState<"onboarding" | "phase-specific" | "full-workflow" | "ai-assistant">("full-workflow");
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
+
   // Initialize application with sample data
   useEffect(() => {
     // Simulate real-time updates with better progress management
@@ -55,6 +61,17 @@ const TransformationXPLR: React.FC = () => {
     }, 45000); // Less frequent updates
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Check for first-time user and show onboarding tour
+  useEffect(() => {
+    const hasVisitedBefore = localStorage.getItem("transformation-xplr-visited");
+    if (!hasVisitedBefore) {
+      setIsFirstTimeUser(true);
+      setTourType("onboarding");
+      setShowGuidedTour(true);
+      localStorage.setItem("transformation-xplr-visited", "true");
+    }
   }, []);
 
   // Enhanced notification system
@@ -89,7 +106,14 @@ const TransformationXPLR: React.FC = () => {
   const handleClientOnboardingSubmit = (data: ClientOnboarding) => {
     console.log("New project data:", data);
 
-    // Create new project from onboarding data with enhanced validation
+    // Generate new company key
+    const companyKey = data.companyName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    // Create comprehensive project data with enhanced validation
     const newProject: TransformationProject = {
       id: `project_${Date.now()}`,
       clientName: data.companyName,
@@ -100,14 +124,77 @@ const TransformationXPLR: React.FC = () => {
       aiAcceleration: Math.floor(35 + Math.random() * 25), // 35-60% range, whole numbers
       startDate: new Date().toISOString().split("T")[0],
       estimatedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      teamMembers: ["AI Assistant", "Project Manager", "Lead Analyst"],
+      teamMembers: ["AI Assistant", "Project Manager", "Lead Analyst", "Senior Consultant"],
       hackettIPMatches: Math.floor(800 + Math.random() * 600),
       region: data.region,
       projectValue: 0,
       currentPhase: 1,
+      revenue: data.revenue,
+      employees: data.employees,
+      currentERP: data.currentERP,
+      painPoints: data.painPoints,
+      objectives: data.objectives,
+      timeline: data.timeline,
+      budget: data.budget,
     };
 
+    // Generate initial AI insights for new company based on their profile
+    const initialInsights: AIInsight[] = [
+      {
+        id: `insight_${Date.now()}_1`,
+        type: "opportunity",
+        title: `${data.industry} Best Practices Implementation`,
+        description: `Leverage industry-specific best practices to optimize finance operations for ${data.companyName}`,
+        confidence: 85,
+        impact: "high",
+        source: "Industry Analysis",
+        phase: 1,
+        actionable: true,
+        estimatedValue: Math.floor(500000 + Math.random() * 1000000),
+        timeframe: "6 months",
+      },
+      {
+        id: `insight_${Date.now()}_2`,
+        type: "automation",
+        title: "Process Automation Opportunities",
+        description: "Identify and implement automation solutions to address identified pain points",
+        confidence: 78,
+        impact: "medium",
+        source: "Pain Point Analysis",
+        phase: 2,
+        actionable: true,
+        estimatedValue: Math.floor(300000 + Math.random() * 800000),
+        timeframe: "4 months",
+      },
+      {
+        id: `insight_${Date.now()}_3`,
+        type: "risk",
+        title: "Implementation Timeline Risk",
+        description: `Based on ${data.timeline} timeline requirements, ensure adequate resource allocation`,
+        confidence: 82,
+        impact: "medium",
+        source: "Timeline Analysis",
+        phase: 1,
+        actionable: true,
+        timeframe: "Immediate",
+      },
+    ];
+
+    // Store the new company data for future reference (in a real app, this would go to a database)
+    const newCompanyData = {
+      project: newProject,
+      aiInsights: initialInsights,
+    };
+
+    // Add to local storage for persistence across sessions
+    const existingCompanies = JSON.parse(localStorage.getItem("transformation-xplr-companies") || "{}");
+    existingCompanies[companyKey] = newCompanyData;
+    localStorage.setItem("transformation-xplr-companies", JSON.stringify(existingCompanies));
+
+    // Update current application state
     setCurrentProject(newProject);
+    setAIInsights(initialInsights);
+    setSelectedCompany(companyKey);
     setShowOnboarding(false);
 
     // Reset workflow phases for new project with enhanced status
@@ -119,8 +206,14 @@ const TransformationXPLR: React.FC = () => {
       }))
     );
 
-    // Show success notification
-    addNotification(`New project "${data.companyName}" created successfully!`, "success");
+    // Show comprehensive success notification
+    addNotification(`New project "${data.companyName}" created successfully! AI insights generated and workspace configured.`, "success");
+
+    // Auto-start onboarding tour for new projects
+    setTimeout(() => {
+      setTourType("onboarding");
+      setShowGuidedTour(true);
+    }, 2000);
     setActiveTab("command-center");
   };
 
@@ -226,6 +319,22 @@ const TransformationXPLR: React.FC = () => {
     }, 100);
 
     addNotification(`AI Assistant opened with ${context.enhancementRequest || "phase enhancement"} request`, "info");
+  };
+
+  // Guided tour handlers
+  const handleStartTour = (type: typeof tourType) => {
+    setTourType(type);
+    setShowGuidedTour(true);
+  };
+
+  const handleTourComplete = () => {
+    setShowGuidedTour(false);
+    addNotification("Guided tour completed! You're ready to start your transformation journey.", "success");
+  };
+
+  const handleTourSkip = () => {
+    setShowGuidedTour(false);
+    addNotification("Tour skipped. You can restart it anytime from the help menu.", "info");
   };
 
   // Enhanced Analytics component with comprehensive metrics and visualizations
@@ -786,7 +895,17 @@ const TransformationXPLR: React.FC = () => {
               <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
               Live Project
             </Badge>
-            <Button variant="outline" size="sm" onClick={() => setShowAIAssistant(true)}>
+
+            {/* Guided Tour Controls */}
+            <div className="flex items-center space-x-2">
+              <GuidedTour tourType="full-workflow" currentPhase={currentProject.currentPhase} onTourComplete={handleTourComplete} onTourSkip={handleTourSkip} />
+              <Button variant="outline" size="sm" onClick={() => handleStartTour("ai-assistant")}>
+                <Lightbulb className="h-4 w-4 mr-2" />
+                Help
+              </Button>
+            </div>
+
+            <Button variant="outline" size="sm" onClick={() => setShowAIAssistant(true)} data-tour="ai-assistant-open">
               <Brain className="h-4 w-4 mr-2" />
               AI Assistant
             </Button>
@@ -815,27 +934,31 @@ const TransformationXPLR: React.FC = () => {
           </TabsList>
 
           <TabsContent value="command-center" id="command-center-panel" role="tabpanel" aria-labelledby="command-center-tab">
-            <CommandCenter
-              currentProject={currentProject}
-              aiInsights={aiInsights}
-              selectedCompany={selectedCompany}
-              onNewProject={handleNewProject}
-              onShowAIAssistant={() => setShowAIAssistant(true)}
-              onExportDeck={handleExportDeck}
-              onViewAnalytics={handleViewAnalytics}
-              onCompanyChange={handleCompanyChange}
-            />
+            <div data-tour="company-selection">
+              <CommandCenter
+                currentProject={currentProject}
+                aiInsights={aiInsights}
+                selectedCompany={selectedCompany}
+                onNewProject={handleNewProject}
+                onShowAIAssistant={() => setShowAIAssistant(true)}
+                onExportDeck={handleExportDeck}
+                onViewAnalytics={handleViewAnalytics}
+                onCompanyChange={handleCompanyChange}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="workflow" id="workflow-panel" role="tabpanel" aria-labelledby="workflow-tab">
-            <WorkflowPhases
-              phases={workflowPhases}
-              currentPhase={currentProject.currentPhase}
-              onPhaseSelect={handlePhaseSelect}
-              onViewDetails={handleViewPhaseDetails}
-              onPhaseStateChange={handlePhaseStateChange}
-              onAIAssistantOpen={handleAIAssistantOpen}
-            />
+            <div data-tour="workflow-phases">
+              <WorkflowPhases
+                phases={workflowPhases}
+                currentPhase={currentProject.currentPhase}
+                onPhaseSelect={handlePhaseSelect}
+                onViewDetails={handleViewPhaseDetails}
+                onPhaseStateChange={handlePhaseStateChange}
+                onAIAssistantOpen={handleAIAssistantOpen}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="analytics" id="analytics-panel" role="tabpanel" aria-labelledby="analytics-tab">

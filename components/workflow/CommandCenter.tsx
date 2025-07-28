@@ -154,7 +154,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               <p className="analytics-subtitle">Select a company to view their transformation scorecard and insights</p>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3" data-tour="company-selection">
               <Select value={selectedCompany} onValueChange={handleCompanyChange}>
                 <SelectTrigger className="w-[300px]" aria-label="Select company for analysis">
                   <SelectValue placeholder="Select company">{COMPANY_OPTIONS.find(c => c.value === selectedCompany)?.label}</SelectValue>
@@ -200,7 +200,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
       {/* Enhanced Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="analytics-metric-card p-6 cursor-pointer transition-all duration-300 hover:scale-105" onClick={onNewProject}>
+        <div className="analytics-metric-card p-6 cursor-pointer transition-all duration-300 hover:scale-105" onClick={onNewProject} data-tour="new-project">
           <div className="flex flex-col items-center justify-center space-y-3">
             <div className="p-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl">
               <Plus className="h-8 w-8 text-white" />

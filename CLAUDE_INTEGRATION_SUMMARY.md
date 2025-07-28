@@ -9,7 +9,7 @@ Successfully integrated Claude Sonnet 4 AI into the Transformation XPLR AI Assis
 ### 1. Real Claude API Integration
 
 - **API Route**: `/app/api/claude/route.ts`
-- **Model**: Claude 3.5 Sonnet (claude-3-5-sonnet-20241022)
+- **Model**: Claude 3.5 Sonnet (claude-sonnet-4-20250514)
 - **API Key**: Configured via `.env.local` environment variable
 - **SDK**: @anthropic-ai/sdk v0.57.0
 

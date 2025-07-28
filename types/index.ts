@@ -14,6 +14,14 @@ export interface TransformationProject {
   region: string;
   projectValue: number;
   currentPhase: number;
+  // Additional onboarding data
+  revenue?: string;
+  employees?: string;
+  currentERP?: string;
+  painPoints?: string[];
+  objectives?: string[];
+  timeline?: string;
+  budget?: string;
 }
 
 // AI insights and recommendations
@@ -118,6 +126,9 @@ export interface ChatMessage {
   attachments?: string[];
   relatedPhase?: number;
   confidence?: number;
+  model?: string;
+  error?: string;
+  fallback?: boolean;
 }
 
 // Progress tracking
@@ -180,7 +191,7 @@ export interface ConversationContext {
   lastPhaseDiscussed: number;
   questionsAsked: number;
   userPreferences: {
-    prefers: 'detailed' | 'concise' | 'actionable';
+    prefers: "detailed" | "concise" | "actionable";
     focusAreas: string[];
   };
   sessionStartTime: Date;
@@ -198,7 +209,6 @@ export interface AIAssistantState {
   isLoading: boolean;
   isConnected: boolean;
   lastApiCall: Date | null;
-  apiStatus: 'connected' | 'error' | 'offline';
-  streamingResponse: boolean;
+  apiStatus: "connected" | "error" | "connecting";
   currentModel: string;
 }
