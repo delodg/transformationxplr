@@ -151,6 +151,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               </CardTitle>
               <CardDescription>Select a company to view their transformation scorecard and insights</CardDescription>
             </div>
+
             <div className="flex items-center space-x-3">
               <Select value={selectedCompany} onValueChange={handleCompanyChange}>
                 <SelectTrigger className="w-[300px]" aria-label="Select company for analysis">
@@ -174,6 +175,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             </div>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="flex items-center space-x-4 text-sm">
             <div className="flex items-center space-x-2">
@@ -193,15 +195,42 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </div>
         </CardContent>
       </Card>
+      {/* Enhanced Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Button onClick={onNewProject} className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
+          <Plus className="h-6 w-6" />
+          <div className="text-center">
+            <div className="text-sm font-medium">New Project</div>
+            <div className="text-xs opacity-80">Start transformation</div>
+          </div>
+        </Button>
 
+        <Button onClick={onShowAIAssistant} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-purple-50 border-purple-200">
+          <Brain className="h-6 w-6 text-purple-600" />
+          <div className="text-center">
+            <div className="text-sm font-medium">AI Assistant</div>
+            <div className="text-xs text-gray-500">{phaseInsights.length} insights ready</div>
+          </div>
+        </Button>
+
+        <Button onClick={onExportDeck} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-green-50 border-green-200">
+          <Download className="h-6 w-6 text-green-600" />
+          <div className="text-center">
+            <div className="text-sm font-medium">Export Deck</div>
+            <div className="text-xs text-gray-500">Generate presentation</div>
+          </div>
+        </Button>
+
+        <Button onClick={onViewAnalytics} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-orange-50 border-orange-200">
+          <BarChart3 className="h-6 w-6 text-orange-600" />
+          <div className="text-center">
+            <div className="text-sm font-medium">Analytics</div>
+            <div className="text-xs text-gray-500">Performance metrics</div>
+          </div>
+        </Button>
+      </div>
       {/* Enhanced Hero Section */}
       <section className="bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 text-white rounded-2xl p-8 relative overflow-hidden" aria-labelledby="hero-heading">
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" aria-hidden="true"></div>
-        <div className="absolute top-4 right-4 opacity-20" aria-hidden="true">
-          <Sparkles className="h-16 w-16" />
-        </div>
-
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -221,10 +250,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   AI Confidence: {averageConfidence}%
                 </Badge>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Zap className="h-8 w-8 text-yellow-300 animate-pulse" />
-              <Brain className="h-8 w-8 text-blue-200" />
             </div>
           </div>
 
@@ -461,41 +486,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </div>
         </CardContent>
       </Card>
-
-      {/* Enhanced Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Button onClick={onNewProject} className="h-20 flex flex-col items-center justify-center space-y-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
-          <Plus className="h-6 w-6" />
-          <div className="text-center">
-            <div className="text-sm font-medium">New Project</div>
-            <div className="text-xs opacity-80">Start transformation</div>
-          </div>
-        </Button>
-
-        <Button onClick={onShowAIAssistant} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-purple-50 border-purple-200">
-          <Brain className="h-6 w-6 text-purple-600" />
-          <div className="text-center">
-            <div className="text-sm font-medium">AI Assistant</div>
-            <div className="text-xs text-gray-500">{phaseInsights.length} insights ready</div>
-          </div>
-        </Button>
-
-        <Button onClick={onExportDeck} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-green-50 border-green-200">
-          <Download className="h-6 w-6 text-green-600" />
-          <div className="text-center">
-            <div className="text-sm font-medium">Export Deck</div>
-            <div className="text-xs text-gray-500">Generate presentation</div>
-          </div>
-        </Button>
-
-        <Button onClick={onViewAnalytics} variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2 hover:bg-orange-50 border-orange-200">
-          <BarChart3 className="h-6 w-6 text-orange-600" />
-          <div className="text-center">
-            <div className="text-sm font-medium">Analytics</div>
-            <div className="text-xs text-gray-500">Performance metrics</div>
-          </div>
-        </Button>
-      </div>
     </div>
   );
 };

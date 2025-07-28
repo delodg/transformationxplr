@@ -41,9 +41,10 @@ interface WorkflowPhasesProps {
   onPhaseSelect: (phase: WorkflowPhase) => void;
   onViewDetails: (phase: WorkflowPhase) => void;
   onPhaseStateChange?: (phaseId: number, newStatus: WorkflowPhase["status"], newProgress?: number) => void;
+  onAIAssistantOpen?: (action: string, context: any) => void;
 }
 
-export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentPhase, onPhaseSelect, onViewDetails, onPhaseStateChange }) => {
+export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentPhase, onPhaseSelect, onViewDetails, onPhaseStateChange, onAIAssistantOpen }) => {
   const [selectedPhaseId, setSelectedPhaseId] = useState(currentPhase);
   const [expandedPhases, setExpandedPhases] = useState<number[]>([currentPhase]);
 
@@ -117,139 +118,215 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
 
   // New phase state manipulation functions
   const handlePausePhase = useCallback(
-    (phase: WorkflowPhase) => {
-      if (phase.status === "in-progress" && onPhaseStateChange) {
-        onPhaseStateChange(phase.id, "pending", phase.progress);
-      }
+    (phaseId: number) => {
+      onPhaseStateChange?.(phaseId, "in-progress", undefined);
     },
     [onPhaseStateChange]
   );
 
   const handleCompletePhase = useCallback(
-    (phase: WorkflowPhase) => {
-      if ((phase.status === "in-progress" || phase.status === "ai-enhanced") && onPhaseStateChange) {
-        onPhaseStateChange(phase.id, "completed", 100);
-      }
+    (phaseId: number) => {
+      onPhaseStateChange?.(phaseId, "completed", 100);
     },
     [onPhaseStateChange]
   );
 
   const handleResetPhase = useCallback(
-    (phase: WorkflowPhase) => {
-      if (onPhaseStateChange) {
-        onPhaseStateChange(phase.id, "pending", 0);
-      }
+    (phaseId: number) => {
+      onPhaseStateChange?.(phaseId, "pending", 0);
     },
     [onPhaseStateChange]
   );
 
   const handleEnhanceWithAI = useCallback(
-    (phase: WorkflowPhase) => {
-      if (phase.status === "in-progress" && onPhaseStateChange) {
-        onPhaseStateChange(phase.id, "ai-enhanced", Math.min(phase.progress + 20, 90));
+    (phaseId: number, enhancementType: string) => {
+      const phase = phases.find(p => p.id === phaseId);
+      if (phase && onAIAssistantOpen) {
+        const context = {
+          phaseId,
+          phaseName: phase.title,
+          phaseStatus: phase.status,
+          phaseProgress: phase.progress,
+          enhancementType,
+        };
+        onAIAssistantOpen(enhancementType, context);
       }
     },
-    [onPhaseStateChange]
+    [phases, onAIAssistantOpen]
+  );
+
+  // AI-powered content modification functions
+  const enhancePhaseContent = useCallback(
+    (phaseId: number, contentType: string) => {
+      const phase = phases.find(p => p.id === phaseId);
+      if (phase && onAIAssistantOpen) {
+        let action = "";
+        let context = {
+          phaseId,
+          phaseName: phase.title,
+          currentContent: {},
+          enhancementRequest: contentType,
+        };
+
+        switch (contentType) {
+          case "deliverables":
+            action = `Enhance Phase ${phaseId} deliverables for ${phase.title}. Current deliverables: ${phase.deliverables.join(
+              ", "
+            )}. Provide detailed descriptions, quality criteria, and success metrics for each deliverable.`;
+            context.currentContent = { deliverables: phase.deliverables };
+            break;
+          case "activities":
+            action = `Optimize Phase ${phaseId} key activities for ${phase.title}. Current activities: ${phase.keyActivities.join(
+              ", "
+            )}. Suggest improvements, automation opportunities, and best practices.`;
+            context.currentContent = { activities: phase.keyActivities };
+            break;
+          case "risks":
+            action = `Analyze and expand Phase ${phaseId} risk assessment for ${phase.title}. Current risks: ${
+              phase.riskFactors?.join(", ") || "No risks identified"
+            }. Provide detailed risk analysis with mitigation strategies and contingency plans.`;
+            context.currentContent = { risks: phase.riskFactors };
+            break;
+          case "success-criteria":
+            action = `Refine Phase ${phaseId} success criteria for ${phase.title}. Current criteria: ${
+              phase.successMetrics?.join(", ") || "No metrics defined"
+            }. Make them SMART (Specific, Measurable, Achievable, Relevant, Time-bound).`;
+            context.currentContent = { successCriteria: phase.successMetrics };
+            break;
+          case "optimization":
+            action = `Provide comprehensive optimization recommendations for Phase ${phaseId}: ${phase.title}. Analyze timeline (${phase.duration}), deliverables, activities, and team requirements. Suggest AI acceleration opportunities.`;
+            context.currentContent = {
+              timeline: phase.duration,
+              deliverables: phase.deliverables,
+              activities: phase.keyActivities,
+              status: phase.status,
+              progress: phase.progress,
+            };
+            break;
+          default:
+            action = `Provide general enhancement recommendations for Phase ${phaseId}: ${phase.title}.`;
+        }
+
+        onAIAssistantOpen(action, context);
+      }
+    },
+    [phases, onAIAssistantOpen]
+  );
+
+  // Phase collaboration functions
+  const generatePhaseReport = useCallback(
+    (phaseId: number) => {
+      const phase = phases.find(p => p.id === phaseId);
+      if (phase && onAIAssistantOpen) {
+        const action = `Generate a comprehensive Phase ${phaseId} status report for ${phase.title}. Include:
+      - Current Progress: ${Math.round(phase.progress)}% complete
+      - Status: ${phase.status}
+      - Timeline: ${phase.duration}
+      - Completed Deliverables: ${phase.deliverables.filter((_, i) => i < Math.floor((phase.progress / 100) * phase.deliverables.length)).join(", ")}
+      - Pending Activities: ${phase.keyActivities.filter((_, i) => i >= Math.floor((phase.progress / 100) * phase.keyActivities.length)).join(", ")}
+      - Risk Status: ${phase.riskFactors?.join(", ") || "No risks identified"}
+      - Team Performance: Based on ${phase.teamRole.length} role assignments
+      
+      Format as an executive summary with next steps and recommendations.`;
+
+        onAIAssistantOpen(action, { phaseId, phase });
+      }
+    },
+    [phases, onAIAssistantOpen]
+  );
+
+  const createActionPlan = useCallback(
+    (phaseId: number) => {
+      const phase = phases.find(p => p.id === phaseId);
+      if (phase && onAIAssistantOpen) {
+        const action = `Create a detailed 2-week action plan for Phase ${phaseId}: ${phase.title}. 
+      Current status: ${phase.status} (${Math.round(phase.progress)}% complete)
+      
+      Include:
+      - Prioritized tasks with owners and deadlines
+      - Resource requirements and dependencies  
+      - Risk mitigation actions
+      - Success metrics and checkpoints
+      - AI acceleration opportunities
+      
+      Focus on moving from ${Math.round(phase.progress)}% to ${Math.min(100, Math.round(phase.progress) + 25)}% completion.`;
+
+        onAIAssistantOpen(action, { phaseId, phase, targetProgress: Math.min(100, Math.round(phase.progress) + 25) });
+      }
+    },
+    [phases, onAIAssistantOpen]
   );
 
   // Enhanced action buttons component
-  const PhaseActionButtons = useCallback(
-    ({ phase, compact = false }: { phase: WorkflowPhase; compact?: boolean }) => {
-      const buttonClass = compact ? "text-xs h-6 px-2" : "text-sm h-8 px-3";
-      const iconClass = compact ? "h-3 w-3" : "h-4 w-4";
-
+  const PhaseActionButtons = React.memo(({ phase, compact = false }: { phase: WorkflowPhase; compact?: boolean }) => {
+    if (phase.status === "completed") {
       return (
-        <div className={`flex items-center ${compact ? "space-x-1" : "space-x-2"}`}>
-          {phase.status === "pending" && (
-            <Button
-              size="sm"
-              variant="outline"
-              className={`${buttonClass} border-green-200 text-green-600 hover:bg-green-50`}
-              onClick={e => {
-                e.stopPropagation();
-                handleStartPhase(phase);
-              }}
-            >
-              <PlayCircle className={`${iconClass} mr-1`} />
-              {compact ? "Start" : "Start Phase"}
-            </Button>
-          )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+          onClick={e => {
+            e.stopPropagation();
+            onViewDetails(phase);
+          }}
+        >
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Done
+        </Button>
+      );
+    }
 
-          {phase.status === "in-progress" && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                className={`${buttonClass} border-orange-200 text-orange-600 hover:bg-orange-50`}
-                onClick={e => {
-                  e.stopPropagation();
-                  handlePausePhase(phase);
-                }}
-              >
-                <PauseCircle className={`${iconClass} mr-1`} />
-                {compact ? "Pause" : "Pause"}
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                className={`${buttonClass} border-purple-200 text-purple-600 hover:bg-purple-50`}
-                onClick={e => {
-                  e.stopPropagation();
-                  handleEnhanceWithAI(phase);
-                }}
-              >
-                <Brain className={`${iconClass} mr-1`} />
-                {compact ? "AI+" : "AI Enhance"}
-              </Button>
-
-              <Button
-                size="sm"
-                className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
-                onClick={e => {
-                  e.stopPropagation();
-                  handleCompletePhase(phase);
-                }}
-              >
-                <CheckCircle className={`${iconClass} mr-1`} />
-                {compact ? "Done" : "Complete"}
-              </Button>
-            </>
-          )}
-
-          {phase.status === "ai-enhanced" && (
-            <Button
-              size="sm"
-              className={`${buttonClass} bg-green-600 hover:bg-green-700 text-white`}
-              onClick={e => {
-                e.stopPropagation();
-                handleCompletePhase(phase);
-              }}
-            >
-              <CheckCircle className={`${iconClass} mr-1`} />
-              {compact ? "Done" : "Complete"}
-            </Button>
-          )}
-
-          {(phase.status === "completed" || phase.status === "in-progress" || phase.status === "ai-enhanced") && (
-            <Button
-              size="sm"
-              variant="outline"
-              className={`${buttonClass} border-gray-300 text-gray-600 hover:bg-gray-50`}
-              onClick={e => {
-                e.stopPropagation();
-                handleResetPhase(phase);
-              }}
-            >
-              <RefreshCw className={`${iconClass} mr-1`} />
-              {compact ? "Reset" : "Reset"}
-            </Button>
-          )}
+    if (phase.status === "in-progress" || phase.status === "ai-enhanced") {
+      return (
+        <div className="flex space-x-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2 text-xs bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            onClick={e => {
+              e.stopPropagation();
+              handlePausePhase(phase.id);
+            }}
+          >
+            <PauseCircle className="h-3 w-3 mr-1" />
+            Pause
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2 text-xs bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            onClick={e => {
+              e.stopPropagation();
+              handleCompletePhase(phase.id);
+            }}
+          >
+            <CheckCircle className="h-3 w-3" />
+          </Button>
         </div>
       );
-    },
-    [handleStartPhase, handlePausePhase, handleCompletePhase, handleResetPhase, handleEnhanceWithAI]
-  );
+    }
+
+    // Pending status
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        className="h-8 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+        onClick={e => {
+          e.stopPropagation();
+          handleStartPhase(phase);
+        }}
+      >
+        <PlayCircle className="h-3 w-3 mr-1" />
+        Start
+      </Button>
+    );
+  });
+
+  // Calculate overall progress and phases for the new progress bar
+  const overallProgress = Math.round(phases.reduce((sum, phase) => sum + phase.progress, 0) / phases.length);
+  const completedPhases = phases.filter(p => p.status === "completed").length;
+  const inProgressPhases = phases.filter(p => p.status === "in-progress" || p.status === "ai-enhanced");
 
   return (
     <div className="space-y-6">
@@ -304,196 +381,149 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
         </Card>
       </div>
 
-      {/* Enhanced Phase Timeline */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      {/* Enhanced Phase Timeline - Responsive Design */}
+      <Card className="mb-8">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
             <div>
-              <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5 text-blue-600" />
-                <span>7-Phase Transformation Workflow</span>
-              </CardTitle>
-              <CardDescription>AI-powered workflow with intelligent automation and guidance at each phase</CardDescription>
+              <CardTitle className="text-xl font-bold text-gray-800">7-Phase Transformation Methodology</CardTitle>
+              <CardDescription className="text-sm text-gray-600 mt-1">Hackett Group's proven approach to finance transformation</CardDescription>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="bg-blue-50 text-blue-600">
-                Phase {currentPhase} Active
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                AI-Accelerated
               </Badge>
-              <Badge variant="outline" className="bg-purple-50 text-purple-600">
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI Enhanced
-              </Badge>
+              <span className="text-sm text-gray-500">
+                {completedPhases}/{phases.length} Completed
+              </span>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Enhanced Stepper - Non-compressed with better spacing */}
-          <div className="relative">
-            {/* Desktop View - Horizontal Stepper */}
-            <div className="hidden lg:block">
-              <div className="flex items-start justify-between relative mb-8">
-                {phases.map((phase, index) => (
-                  <div key={phase.id} className="flex-1 relative" style={{ maxWidth: `${100 / phases.length}%` }}>
-                    {/* Connection Line */}
-                    {index < phases.length - 1 && (
-                      <div className="absolute top-6 left-1/2 transform translate-x-1/2 w-full h-0.5 z-0">
-                        <div className={`h-full transition-colors duration-300 ${phase.status === "completed" ? "bg-green-400" : "bg-gray-200"}`}></div>
-                      </div>
-                    )}
+          {/* Responsive Phase Grid */}
+          <div className="phases-container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4 lg:gap-3 mb-6">
+            {phases.map((phase, index) => {
+              const isActive = phase.id === selectedPhaseId;
+              const isCompleted = phase.status === "completed";
+              const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
 
-                    {/* Phase Step */}
-                    <div
-                      className={`relative z-10 flex flex-col items-center cursor-pointer transition-all duration-300 p-4 rounded-xl ${
-                        phase.id === selectedPhaseId ? "transform scale-105 bg-blue-50 shadow-lg" : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => handlePhaseClick(phase)}
-                    >
-                      {/* Phase Circle */}
-                      <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                          phase.status === "completed"
-                            ? "bg-green-500 text-white shadow-md"
-                            : phase.status === "in-progress"
-                            ? "bg-blue-500 text-white shadow-md animate-pulse"
-                            : phase.status === "ai-enhanced"
-                            ? "bg-purple-500 text-white shadow-md"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {phase.status === "completed" ? <CheckCircle className="h-6 w-6" /> : <span>{phase.id}</span>}
-                      </div>
+              return (
+                <div
+                  key={phase.id}
+                  className={`
+                    phase-card relative cursor-pointer transition-all duration-300 ease-in-out group
+                    ${isActive ? "transform scale-105 z-10" : "hover:transform hover:scale-102"}
+                    min-w-[140px] sm:min-w-[160px] lg:min-w-[180px] xl:min-w-[200px]
+                  `}
+                  onClick={() => handlePhaseClick(phase)}
+                >
+                  {/* Phase Card */}
+                  <div
+                    className={`
+                      relative bg-white rounded-xl p-3 sm:p-4 border-2 transition-all duration-300
+                      ${isActive ? "border-blue-400 shadow-lg" : "border-gray-200 hover:border-gray-300 hover:shadow-md"}
+                      ${isCompleted ? "bg-green-50 border-green-200" : ""}
+                      ${isInProgress ? "bg-blue-50 border-blue-200" : ""}
+                      min-h-[280px] sm:min-h-[300px] lg:min-h-[320px] xl:min-h-[280px]
+                      flex flex-col justify-between
+                    `}
+                  >
+                    {/* Mobile Phase Number Badge */}
+                    <div className="block xl:hidden absolute -top-2 -left-2 w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
+                      {phase.id}
+                    </div>
 
-                      {/* Phase Info */}
-                      <div className="text-center mt-3 min-h-[80px] flex flex-col justify-center">
-                        <h3 className="text-sm font-medium text-gray-900 mb-1 leading-tight max-w-[140px]">{phase.title}</h3>
-                        <div className="flex flex-col items-center space-y-1">
-                          <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
-                            {phase.status.replace("-", " ").toUpperCase()}
-                          </Badge>
-                          <div className="text-xs text-gray-500 flex items-center">
-                            <Timer className="h-3 w-3 mr-1" />
-                            {phase.duration}
-                          </div>
+                    {/* Card Content - Top Section */}
+                    <div className="flex-1">
+                      {/* Desktop Progress Circle */}
+                      <div className="hidden xl:flex items-center justify-center mb-3">
+                        <div
+                          className={`
+                             w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300
+                             ${isCompleted ? "bg-green-100 text-green-700 border-2 border-green-300" : ""}
+                             ${isInProgress ? "bg-blue-100 text-blue-700 border-2 border-blue-300" : ""}
+                             ${!isCompleted && !isInProgress ? "bg-gray-100 text-gray-600 border-2 border-gray-300" : ""}
+                           `}
+                        >
+                          {isCompleted ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <span className="text-xs sm:text-sm">{phase.id}</span>}
                         </div>
                       </div>
 
-                      {/* Progress Bar */}
-                      <div className="w-full mt-2">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="text-gray-500">Progress</span>
-                          <span className="font-medium">{Math.round(phase.progress)}%</span>
-                        </div>
-                        <Progress value={Math.round(phase.progress)} className="h-2" />
+                      {/* Phase Title - Responsive Typography */}
+                      <h3 className="font-semibold text-gray-800 text-center mb-2 text-sm sm:text-base lg:text-sm xl:text-base leading-tight">{phase.title}</h3>
+
+                      {/* Status Badge */}
+                      <div className="flex justify-center mb-3">
+                        <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
+                          {phase.status.replace("-", " ")}
+                        </Badge>
                       </div>
 
-                      {/* AI Acceleration Badge */}
-                      {phase.aiAcceleration > 0 && (
-                        <div className="mt-2">
-                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-200">
-                            <Zap className="h-3 w-3 mr-1" />+{Math.round(phase.aiAcceleration)}%
-                          </Badge>
+                      {/* Progress Bar - Mobile Optimized */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-600">Progress</span>
+                          <span className="text-xs font-medium">{Math.round(phase.progress)}%</span>
                         </div>
-                      )}
+                        <Progress value={phase.progress} className="h-1.5 sm:h-2" />
+                      </div>
 
-                      {/* Enhanced Action buttons */}
-                      <div className="mt-3">
+                      {/* Duration - Responsive Text */}
+                      <div className="text-center mb-4">
+                        <div className="text-xs text-gray-500 mb-1">Duration</div>
+                        <div className="text-xs sm:text-sm font-medium text-gray-700">{phase.duration}</div>
+                        {phase.traditionalDuration && <div className="text-xs text-green-600 font-medium">↓ {Math.round(phase.aiAcceleration)}% faster</div>}
+                      </div>
+                    </div>
+
+                    {/* Card Content - Bottom Section (Action Buttons) */}
+                    <div className="flex-shrink-0 mt-3 pt-2 border-t border-gray-100">
+                      {/* Always Visible Action Buttons - Responsive */}
+                      <div className="action-buttons flex justify-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-xs bg-gray-50 hover:bg-gray-100"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onViewDetails(phase);
+                          }}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
                         <PhaseActionButtons phase={phase} compact={true} />
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Mobile/Tablet View - Vertical Stepper */}
-            <div className="lg:hidden space-y-4">
-              {phases.map((phase, index) => (
-                <div key={phase.id} className="relative">
-                  {/* Connection Line for Mobile */}
-                  {index < phases.length - 1 && (
-                    <div className="absolute left-6 top-12 w-0.5 h-16 z-0">
-                      <div className={`w-full h-full transition-colors duration-300 ${phase.status === "completed" ? "bg-green-400" : "bg-gray-200"}`}></div>
-                    </div>
-                  )}
-
-                  {/* Phase Card for Mobile */}
-                  <div
-                    className={`relative z-10 flex items-start space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      phase.id === selectedPhaseId ? "border-blue-500 bg-blue-50 shadow-md" : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-                    }`}
-                    onClick={() => handlePhaseClick(phase)}
-                  >
-                    {/* Phase Circle */}
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                        phase.status === "completed"
-                          ? "bg-green-500 text-white"
-                          : phase.status === "in-progress"
-                          ? "bg-blue-500 text-white animate-pulse"
-                          : phase.status === "ai-enhanced"
-                          ? "bg-purple-500 text-white"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
-                    >
-                      {phase.status === "completed" ? <CheckCircle className="h-6 w-6" /> : <span>{phase.id}</span>}
-                    </div>
-
-                    {/* Phase Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium text-gray-900 text-sm">{phase.title}</h3>
-                        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                          <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
-                            {phase.status.replace("-", " ").toUpperCase()}
-                          </Badge>
-                          {phase.aiAcceleration > 0 && (
-                            <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-200">
-                              <Zap className="h-3 w-3 mr-1" />
-                              {Math.round(phase.aiAcceleration)}%
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{phase.description}</p>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-gray-500">Progress</span>
-                            <span className="font-medium">{Math.round(phase.progress)}%</span>
-                          </div>
-                          <Progress value={Math.round(phase.progress)} className="h-2" />
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Timer className="h-3 w-3 mr-1" />
-                          <span>{phase.duration}</span>
-                        </div>
-                      </div>
-
-                      {/* Enhanced Action buttons for mobile */}
-                      <div className="mt-3">
-                        <PhaseActionButtons phase={phase} compact={false} />
-                      </div>
-                    </div>
-                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile Navigation Dots */}
+          <div className="block xl:hidden flex justify-center space-x-2 mb-4">
+            {phases.map(phase => (
+              <button
+                key={phase.id}
+                className={`
+                  w-2 h-2 rounded-full transition-all duration-200
+                  ${phase.id === selectedPhaseId ? "bg-blue-600 w-6" : "bg-gray-300 hover:bg-gray-400"}
+                `}
+                onClick={() => setSelectedPhaseId(phase.id)}
+              />
+            ))}
           </div>
 
           {/* Overall Progress Bar */}
-          <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
+          <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-gray-700">Workflow Progress</span>
-              <span className="text-sm text-gray-600">{phaseStats.totalProgress}% Complete</span>
+              <span className="text-sm font-medium text-gray-700">Overall Project Progress</span>
+              <span className="text-sm font-bold text-blue-600">{Math.round(overallProgress)}%</span>
             </div>
-            <Progress value={phaseStats.totalProgress} className="h-3" />
-            <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-              <span>
-                {phaseStats.completed} of {phases.length} phases completed
-              </span>
-              <span>AI Acceleration: {phaseStats.averageAIAcceleration}%</span>
+            <Progress value={overallProgress} className="h-2 mb-2" />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{completedPhases} phases completed</span>
+              <span>{inProgressPhases.length} in progress</span>
             </div>
           </div>
         </CardContent>
@@ -501,29 +531,88 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
 
       {/* Enhanced Detailed Phase Information */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold mb-1 flex items-center space-x-2">
-              <span>{selectedPhase.title}</span>
-              <Badge variant="outline" className={getStatusColor(selectedPhase.status)}>
-                {selectedPhase.status.replace("-", " ")}
+        {/* Phase Header with Enhanced Controls */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">{selectedPhase.title}</h2>
+              <p className="text-gray-600 mt-1">{selectedPhase.description}</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className={`${getStatusColor(selectedPhase.status)} text-sm`}>
+                {selectedPhase.status.replace("-", " ").toUpperCase()}
               </Badge>
-            </h2>
-            <p className="text-gray-600">{selectedPhase.description}</p>
+              <Badge variant="outline" className="text-sm">
+                {Math.round(selectedPhase.progress)}% Complete
+              </Badge>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={() => onViewDetails(selectedPhase)}>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </Button>
-            <Button size="sm" onClick={() => onPhaseSelect(selectedPhase)}>
-              <Target className="h-4 w-4 mr-2" />
-              Focus Phase
-            </Button>
-            <PhaseActionButtons phase={selectedPhase} compact={false} />
+
+          {/* AI-Powered Quick Actions */}
+          <div className="bg-white/60 rounded-lg p-4 mb-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <Brain className="h-5 w-5 text-purple-600" />
+              <h3 className="font-semibold text-gray-800">AI-Powered Phase Management</h3>
+              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                Enhanced
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button variant="outline" size="sm" className="flex items-center space-x-2 hover:bg-blue-50 hover:border-blue-300" onClick={() => generatePhaseReport(selectedPhase.id)}>
+                <FileText className="h-4 w-4" />
+                <span>Generate Report</span>
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center space-x-2 hover:bg-green-50 hover:border-green-300" onClick={() => createActionPlan(selectedPhase.id)}>
+                <Calendar className="h-4 w-4" />
+                <span>Action Plan</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2 hover:bg-purple-50 hover:border-purple-300"
+                onClick={() => enhancePhaseContent(selectedPhase.id, "optimization")}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Optimize</span>
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center space-x-2 hover:bg-orange-50 hover:border-orange-300" onClick={() => enhancePhaseContent(selectedPhase.id, "risks")}>
+                <AlertTriangle className="h-4 w-4" />
+                <span>Risk Analysis</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Content Enhancement Controls */}
+          <div className="bg-white/60 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <RefreshCw className="h-5 w-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-800">Content Enhancement</h3>
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                AI Assisted
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-green-50" onClick={() => enhancePhaseContent(selectedPhase.id, "deliverables")}>
+                <Target className="h-4 w-4" />
+                <span>Enhance Deliverables</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-blue-50" onClick={() => enhancePhaseContent(selectedPhase.id, "activities")}>
+                <Activity className="h-4 w-4" />
+                <span>Optimize Activities</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-purple-50" onClick={() => enhancePhaseContent(selectedPhase.id, "success-criteria")}>
+                <CheckCircle className="h-4 w-4" />
+                <span>Refine Success Metrics</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2 hover:bg-yellow-50" onClick={() => handleEnhanceWithAI(selectedPhase.id, "comprehensive-review")}>
+                <BarChart3 className="h-4 w-4" />
+                <span>Full Review</span>
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Phase Details Tabs */}
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>

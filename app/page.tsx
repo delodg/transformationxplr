@@ -210,6 +210,24 @@ const TransformationXPLR: React.FC = () => {
     }
   };
 
+  // Handle AI Assistant integration from WorkflowPhases
+  const handleAIAssistantOpen = (action: string, context: any) => {
+    // Open AI Assistant and set the action as input
+    setShowAIAssistant(true);
+
+    // Use a small delay to ensure the AI Assistant is open before setting input
+    setTimeout(() => {
+      // Find the AI Assistant's input setter and use it
+      // The action is already a complete prompt that can be sent directly
+      const aiAssistantElement = document.querySelector("[data-ai-assistant-input]");
+      if (aiAssistantElement) {
+        (aiAssistantElement as any).value = action;
+      }
+    }, 100);
+
+    addNotification(`AI Assistant opened with ${context.enhancementRequest || "phase enhancement"} request`, "info");
+  };
+
   // Enhanced Analytics component with comprehensive metrics and visualizations
   const AnalyticsView = React.useMemo(() => {
     const phaseCompletionData = workflowPhases.map(phase => ({
@@ -599,7 +617,7 @@ const TransformationXPLR: React.FC = () => {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -659,6 +677,7 @@ const TransformationXPLR: React.FC = () => {
               onPhaseSelect={handlePhaseSelect}
               onViewDetails={handleViewPhaseDetails}
               onPhaseStateChange={handlePhaseStateChange}
+              onAIAssistantOpen={handleAIAssistantOpen}
             />
           </TabsContent>
 

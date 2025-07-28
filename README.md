@@ -1,4 +1,28 @@
-# transformationxplr
+# Transformation XPLR
+
+## AI Assistant Markdown Support
+
+The AI Assistant now supports rich markdown formatting for enhanced readability and better information presentation:
+
+### Supported Markdown Features:
+
+- **Headers** (H1-H6) for content organization
+- **Bold** and _italic_ text emphasis
+- **Lists** (bulleted and numbered) for structured information
+- **Code blocks** with syntax highlighting and copy functionality
+- **Tables** for data presentation
+- **Blockquotes** for important notes and tips
+- **Links** for references and resources
+
+### Copy Code Feature:
+
+Code blocks now include a copy button in the top-right corner for easy copying to clipboard.
+
+### Quick Access:
+
+Use the "Markdown Demo" quick action in the AI Assistant to see examples of all formatting capabilities.
+
+---
 
 This project was generated with Wallah - AI-powered application generator.
 
@@ -23,18 +47,21 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 This application comes with a complete, production-ready setup:
 
 ### 🎨 UI Components
+
 - **Shadcn/UI Library**: Complete set of accessible, customizable components
 - **Button, Card, Input, Label, Badge**: Essential UI building blocks
 - **Toast System**: User notifications with useToast hook
 - **Responsive Design**: Mobile-first, works on all devices
 
 ### 🛠️ Development Tools
+
 - **TypeScript**: Strict typing for better development experience
 - **Tailwind CSS**: Utility-first CSS framework with full configuration
 - **ESLint**: Code quality and consistency
 - **PostCSS & Autoprefixer**: CSS processing and browser compatibility
 
 ### 📚 Available Libraries
+
 - **Animations**: Motion for React (React 19 compatible) for smooth transitions
 - **Charts**: Recharts for data visualization
 - **Forms**: React Hook Form with Zod validation
@@ -48,6 +75,7 @@ This application comes with a complete, production-ready setup:
 This project includes a comprehensive set of production-ready UI components:
 
 **📝 Form Components:**
+
 - Button (variants, sizes, loading states)
 - Input (text, email, password, etc.)
 - Textarea (resizable, auto-grow)
@@ -59,6 +87,7 @@ This project includes a comprehensive set of production-ready UI components:
 - Slider (range input for numeric values)
 
 **📦 Layout & Display:**
+
 - Card (header, content, footer sections)
 - Avatar (image, fallback, status indicators)
 - Badge (colored labels and status indicators)
@@ -67,6 +96,7 @@ This project includes a comprehensive set of production-ready UI components:
 - Skeleton (loading state placeholders)
 
 **💬 Feedback & Interaction:**
+
 - Alert (info, warning, error, success)
 - Toast (notifications with actions)
 - Dialog (modals, confirmations, forms)
@@ -74,6 +104,7 @@ This project includes a comprehensive set of production-ready UI components:
 - Accordion (collapsible content sections)
 
 **✨ All components include:**
+
 - Full TypeScript support with proper interfaces
 - Dark/light mode compatibility
 - Accessibility (WCAG 2.1 AA compliant)
@@ -82,6 +113,7 @@ This project includes a comprehensive set of production-ready UI components:
 - Radix UI primitives for robust functionality
 
 ### 🔧 Features
+
 - **Dark/Light Theme Support**: Next Themes integration
 - **Accessibility**: WCAG compliant components
 - **Performance**: Optimized for Core Web Vitals
@@ -101,13 +133,15 @@ This project is fully compatible with React 19 and includes:
 - **Zero Configuration**: Everything works out of the box with `npm install`
 
 ### 🔄 Animation Migration Note
+
 If you're familiar with Framer Motion, the API is almost identical:
+
 ```javascript
 // Old: import { motion } from "framer-motion"
-import { motion } from "motion/react"
+import { motion } from "motion/react";
 
 // The component API remains the same
-<motion.div animate={{ opacity: 1 }} />
+<motion.div animate={{ opacity: 1 }} />;
 ```
 
 ## 🏗️ Project Structure
@@ -156,6 +190,7 @@ This project uses **Tailwind CSS** with a complete design system:
 ## 📱 Responsive Design
 
 The application is built mobile-first and includes:
+
 - Responsive breakpoints (sm, md, lg, xl)
 - Touch-friendly interactions
 - Optimized layouts for all screen sizes
@@ -163,8 +198,9 @@ The application is built mobile-first and includes:
 ## 🔧 Customization
 
 All components are fully customizable:
+
 - Modify `tailwind.config.js` for design tokens
-- Edit component files in `components/ui/` 
+- Edit component files in `components/ui/`
 - Add new variants using `class-variance-authority`
 - Extend with additional Radix UI components
 

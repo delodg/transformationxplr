@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +39,8 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
+  Plus,
+  Copy,
 } from "lucide-react";
 import { ChatMessage, TransformationProject, AIInsight, ConversationContext, AIAssistantState, ClaudeApiRequest, ClaudeApiResponse, WorkflowPhase } from "../../types";
 
@@ -86,13 +90,25 @@ export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, 
   useEffect(() => {
     const welcomeMessage: ChatMessage = {
       id: "welcome",
-      content: `Hello! I'm your Claude-powered AI assistant for the ${
+      content: `Hello! I'm your **Claude-powered AI assistant** for the **${
         currentProject.clientName
-      } transformation project. I can help you with insights, recommendations, and guidance across all 7 phases.\n\n🎯 **Current Status:**\n• Phase ${currentProject.currentPhase} (${Math.round(
-        currentProject.progress
-      )}% complete)\n• ${aiInsights.length} AI insights available\n• ${Math.round(
-        currentProject.aiAcceleration
-      )}% AI acceleration\n• Connected to Claude Sonnet 4 ⚡\n\nWhat would you like to explore?`,
+      }** transformation project. I can help you with insights, recommendations, and guidance across all 7 phases.
+
+## 🎯 Current Status:
+- **Phase ${currentProject.currentPhase}** (${Math.round(currentProject.progress)}% complete)
+- **${aiInsights.length} AI insights** available
+- **${Math.round(currentProject.aiAcceleration)}% AI acceleration**
+- Connected to *Claude Sonnet 4* ⚡
+
+### What I can help you with:
+1. **Strategic Analysis** - Risk assessment, opportunity identification
+2. **Phase Management** - Progress tracking, timeline optimization
+3. **Content Generation** - Reports, presentations, action plans
+4. **Data Insights** - Benchmark analysis, performance metrics
+
+> 💡 **Tip**: Try asking me about specific phases, risks, or opportunities. I can provide detailed analysis and actionable recommendations!
+
+What would you like to explore?`,
       role: "assistant",
       timestamp: new Date(),
       relatedPhase: currentProject.currentPhase,
@@ -301,48 +317,200 @@ export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, 
 
   const getEnhancedQuickActions = useCallback(
     () => [
+      // STRATEGIC ANALYSIS ACTIONS
       {
-        label: "Phase Guidance",
-        action: () => setInput(`What should I focus on for Phase ${currentProject.currentPhase}?`),
+        category: "strategic",
+        label: "Phase Deep Dive",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Provide a comprehensive analysis of Phase ${currentProject.currentPhase}. Include current progress, key risks, upcoming deliverables, and actionable recommendations for the next 2 weeks.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
         icon: Target,
-        description: "Current phase priorities",
+        description: "Comprehensive current phase analysis",
+        type: "analysis",
       },
       {
-        label: "Risk Assessment",
-        action: () => setInput("What are the main risks I should be aware of?"),
+        category: "strategic",
+        label: "Risk Assessment & Mitigation",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Analyze our top 3 project risks: ${
+              insightsByType.risks
+                .slice(0, 3)
+                .map(r => r.title)
+                .join(", ") || "general project risks"
+            }. For each risk, provide impact assessment, likelihood, and specific mitigation strategies with timelines.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
         icon: AlertCircle,
-        description: `${insightsByType.risks.length} risks identified`,
+        description: `${insightsByType.risks.length} risks require attention`,
+        type: "risk",
       },
       {
-        label: "Value Opportunities",
-        action: () => setInput("What value opportunities can we capture?"),
+        category: "strategic",
+        label: "Value Opportunity Roadmap",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Create a detailed value realization roadmap for our identified opportunities totaling ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact" }).format(
+              totalEstimatedValue
+            )}. Prioritize by ROI, effort, and timeline. Include quick wins for the next 30 days.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
         icon: TrendingUp,
-        description: new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-          notation: "compact",
-        }).format(totalEstimatedValue),
+        description: `${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact" }).format(totalEstimatedValue)} potential value`,
+        type: "opportunity",
       },
       {
-        label: "AI Acceleration",
-        action: () => setInput("Where can AI provide the most value?"),
+        category: "strategic",
+        label: "AI Acceleration Strategy",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Develop a comprehensive AI acceleration strategy to increase our current ${Math.round(
+              currentProject.aiAcceleration
+            )}% to 50%+ target. Include specific AI use cases, technology recommendations, and implementation priorities.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
         icon: Sparkles,
-        description: `${Math.round(currentProject.aiAcceleration)}% current`,
+        description: `Optimize from ${Math.round(currentProject.aiAcceleration)}% current`,
+        type: "automation",
       },
+
+      // OPERATIONAL SUPPORT ACTIONS
       {
-        label: "Team Resources",
-        action: () => setInput("How can we optimize our team and resources?"),
+        category: "operational",
+        label: "Team & Resource Optimization",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Analyze our team of ${currentProject.teamMembers.length} members and recommend optimal resource allocation for Phase ${currentProject.currentPhase}. Include skill gaps, workload balancing, and training needs.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
         icon: Users,
-        description: `${currentProject.teamMembers.length} members`,
+        description: `Optimize ${currentProject.teamMembers.length} team members`,
+        type: "resource",
       },
       {
-        label: "Timeline & Progress",
-        action: () => setInput("What's our timeline and progress status?"),
+        category: "operational",
+        label: "Progress & Timeline Review",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Conduct a comprehensive project health check. We're ${Math.round(
+              currentProject.progress
+            )}% complete. Analyze timeline adherence, identify bottlenecks, and recommend acceleration tactics for upcoming phases.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
         icon: Calendar,
-        description: `${Math.round(currentProject.progress)}% complete`,
+        description: `${Math.round(currentProject.progress)}% complete - health check`,
+        type: "progress",
+      },
+      {
+        category: "operational",
+        label: "Stakeholder Communication Plan",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Create a stakeholder communication strategy for ${currentProject.clientName}. Include key messages for Phase ${currentProject.currentPhase}, meeting cadence, reporting templates, and change management tactics.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: Users,
+        description: "Enhance stakeholder engagement",
+        type: "communication",
+      },
+      {
+        category: "operational",
+        label: "Phase Deliverable Review",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Review all Phase ${currentProject.currentPhase} deliverables and provide quality assessment. Suggest improvements, identify gaps, and recommend next actions to ensure client satisfaction.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: FileText,
+        description: "Quality check deliverables",
+        type: "deliverable",
+      },
+
+      // CONTENT MODIFICATION ACTIONS
+      {
+        category: "content",
+        label: "Generate Phase Summary",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Generate a comprehensive Phase ${currentProject.currentPhase} executive summary for ${currentProject.clientName}. Include progress, key findings, recommendations, and next steps in presentation-ready format.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: FileText,
+        description: "Create executive summary",
+        type: "generation",
+      },
+      {
+        category: "content",
+        label: "Markdown Demo",
+        action: () => {
+          setActiveTab("chat");
+          setInput("Show me examples of how you can format responses with headers, lists, code blocks, tables, and other markdown features.");
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: BookOpen,
+        description: "See formatting examples",
+        type: "demo",
+      },
+      {
+        category: "content",
+        label: "Update Project Charter",
+        action: () => {
+          setActiveTab("chat");
+          setInput(`Review and update our project charter based on current progress and learnings. Include revised scope, timeline adjustments, resource changes, and updated success criteria.`);
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: RefreshCw,
+        description: "Revise project charter",
+        type: "update",
+      },
+      {
+        category: "content",
+        label: "Create Action Items",
+        action: () => {
+          setActiveTab("chat");
+          setInput(`Generate prioritized action items for the next 2 weeks based on our current phase progress. Include owners, deadlines, dependencies, and success criteria for each action.`);
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: Plus,
+        description: "Generate next steps",
+        type: "planning",
+      },
+      {
+        category: "content",
+        label: "Business Case Development",
+        action: () => {
+          setActiveTab("chat");
+          setInput(
+            `Develop a detailed business case for our top 3 transformation initiatives. Include investment requirements, ROI calculations, implementation timeline, and risk mitigation strategies.`
+          );
+          setTimeout(() => handleSendMessage(), 100);
+        },
+        icon: DollarSign,
+        description: "Build investment case",
+        type: "business-case",
       },
     ],
-    [currentProject, insightsByType.risks.length, totalEstimatedValue]
+    [currentProject, insightsByType.risks.length, totalEstimatedValue, setActiveTab, setInput, handleSendMessage]
   );
 
   const clearConversation = useCallback(() => {
@@ -708,7 +876,62 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                             </div>
                           </div>
                         )}
-                        <div className="text-sm leading-relaxed whitespace-pre-line">{message.content}</div>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          className="ai-assistant-markdown text-sm leading-relaxed"
+                          components={{
+                            code: ({ node, inline, className, children, ...props }: any) =>
+                              inline ? (
+                                <code className="bg-blue-50 text-blue-700 px-1 py-0.5 rounded text-xs font-mono" {...props}>
+                                  {children}
+                                </code>
+                              ) : (
+                                <code className="block bg-gray-100 text-gray-800 p-2 rounded text-xs font-mono overflow-x-auto" {...props}>
+                                  {children}
+                                </code>
+                              ),
+                            pre: ({ children }: any) => (
+                              <pre className="bg-gray-100 border border-gray-200 rounded p-3 mb-2 overflow-x-auto relative">
+                                <div className="absolute top-2 right-2 flex space-x-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                                    onClick={() => {
+                                      // Extract text content from children
+                                      const extractText = (node: any): string => {
+                                        if (typeof node === "string") return node;
+                                        if (node?.props?.children) {
+                                          if (Array.isArray(node.props.children)) {
+                                            return node.props.children.map(extractText).join("");
+                                          }
+                                          return extractText(node.props.children);
+                                        }
+                                        return "";
+                                      };
+
+                                      const text = Array.isArray(children) ? children.map(extractText).join("") : extractText(children);
+
+                                      navigator.clipboard
+                                        .writeText(text)
+                                        .then(() => {
+                                          alert("Code copied to clipboard!");
+                                        })
+                                        .catch(err => {
+                                          console.error("Failed to copy code: ", err);
+                                        });
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                {children}
+                              </pre>
+                            ),
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
                         <div className="text-xs opacity-70 mt-2 flex justify-between items-center">
                           <span>{message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                           {message.role === "assistant" && (
@@ -805,24 +1028,31 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100">
                   <div className="flex items-center space-x-2 mb-2">
                     <Target className="h-5 w-5 text-blue-600" />
-                    <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">AI-Powered Actions</h2>
                   </div>
-                  <p className="text-sm text-gray-600">Instantly start conversations about key transformation topics</p>
+                  <p className="text-sm text-gray-600">Click any action to automatically send it to the AI Assistant for immediate execution</p>
                 </div>
 
                 {/* Action Categories */}
                 <div className="space-y-6">
-                  {/* Strategic Actions */}
+                  {/* Strategic Analysis Actions */}
                   <div>
                     <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
                       <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
-                      Strategic Analysis
+                      Strategic Analysis & Planning
+                      <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700 border-green-200">
+                        AI Enhanced
+                      </Badge>
                     </h3>
                     <div className="grid grid-cols-1 gap-3">
                       {getEnhancedQuickActions()
-                        .slice(0, 3)
+                        .filter(action => action.category === "strategic")
                         .map((action, index) => (
-                          <Card key={index} className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-green-200 hover:border-l-green-400" onClick={action.action}>
+                          <Card
+                            key={index}
+                            className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-green-200 hover:border-l-green-400 hover:bg-green-50/50"
+                            onClick={action.action}
+                          >
                             <div className="flex items-center space-x-3">
                               <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-blue-100 rounded-xl flex items-center justify-center">
                                 <action.icon className="h-6 w-6 text-green-600" />
@@ -830,11 +1060,14 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                               <div className="flex-1">
                                 <div className="font-semibold text-gray-800">{action.label}</div>
                                 <div className="text-sm text-gray-600 mt-1">{action.description}</div>
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    {action.type}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">Auto-executes in chat</span>
+                                </div>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                  Strategic
-                                </Badge>
                                 <ArrowRight className="h-4 w-4 text-gray-400" />
                               </div>
                             </div>
@@ -843,17 +1076,24 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                     </div>
                   </div>
 
-                  {/* Operational Actions */}
+                  {/* Operational Support Actions */}
                   <div>
                     <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
                       <Settings className="h-4 w-4 mr-2 text-blue-600" />
-                      Operational Support
+                      Operational Support & Management
+                      <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        Process Optimization
+                      </Badge>
                     </h3>
                     <div className="grid grid-cols-1 gap-3">
                       {getEnhancedQuickActions()
-                        .slice(3, 6)
+                        .filter(action => action.category === "operational")
                         .map((action, index) => (
-                          <Card key={index} className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-200 hover:border-l-blue-400" onClick={action.action}>
+                          <Card
+                            key={index}
+                            className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-200 hover:border-l-blue-400 hover:bg-blue-50/50"
+                            onClick={action.action}
+                          >
                             <div className="flex items-center space-x-3">
                               <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
                                 <action.icon className="h-6 w-6 text-blue-600" />
@@ -861,11 +1101,55 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                               <div className="flex-1">
                                 <div className="font-semibold text-gray-800">{action.label}</div>
                                 <div className="text-sm text-gray-600 mt-1">{action.description}</div>
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                    {action.type}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">Auto-executes in chat</span>
+                                </div>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                  Operational
-                                </Badge>
+                                <ArrowRight className="h-4 w-4 text-gray-400" />
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Content Modification Actions */}
+                  <div>
+                    <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                      <FileText className="h-4 w-4 mr-2 text-purple-600" />
+                      Content Creation & Modification
+                      <Badge variant="outline" className="ml-2 text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        AI Generation
+                      </Badge>
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                      {getEnhancedQuickActions()
+                        .filter(action => action.category === "content")
+                        .map((action, index) => (
+                          <Card
+                            key={index}
+                            className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-purple-200 hover:border-l-purple-400 hover:bg-purple-50/50"
+                            onClick={action.action}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center">
+                                <action.icon className="h-6 w-6 text-purple-600" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-800">{action.label}</div>
+                                <div className="text-sm text-gray-600 mt-1">{action.description}</div>
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                    {action.type}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">Auto-executes in chat</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
                                 <ArrowRight className="h-4 w-4 text-gray-400" />
                               </div>
                             </div>
@@ -877,52 +1161,75 @@ Average Confidence: ${Math.round(conversationContext.responseQuality.avgConfiden
                   {/* Quick Start Templates */}
                   <div>
                     <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
-                      <Sparkles className="h-4 w-4 mr-2 text-purple-600" />
+                      <Sparkles className="h-4 w-4 mr-2 text-orange-600" />
                       Quick Start Templates
+                      <Badge variant="outline" className="ml-2 text-xs bg-orange-50 text-orange-700 border-orange-200">
+                        Pre-built
+                      </Badge>
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <Card
-                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-purple-200 hover:border-l-purple-400"
-                        onClick={() => setInput("Can you provide a comprehensive assessment of our transformation progress?")}
+                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-orange-200 hover:border-l-orange-400 hover:bg-orange-50/50"
+                        onClick={() => {
+                          setActiveTab("chat");
+                          setInput(
+                            `Provide a comprehensive assessment of our transformation progress across all phases. Include achievements, challenges, upcoming risks, and strategic recommendations for accelerating delivery.`
+                          );
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
                       >
                         <div className="flex items-center space-x-2 mb-2">
-                          <BarChart3 className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium">Progress Review</span>
+                          <BarChart3 className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">Comprehensive Review</span>
                         </div>
-                        <p className="text-xs text-gray-600">Get comprehensive progress assessment</p>
+                        <p className="text-xs text-gray-600">Full project assessment</p>
                       </Card>
 
                       <Card
-                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-purple-200 hover:border-l-purple-400"
-                        onClick={() => setInput("What are the next critical steps we should focus on?")}
+                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-orange-200 hover:border-l-orange-400 hover:bg-orange-50/50"
+                        onClick={() => {
+                          setActiveTab("chat");
+                          setInput(`What are the next 3 critical steps we should focus on? Prioritize by impact, urgency, and resource requirements. Include specific deliverables and timelines.`);
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
                       >
                         <div className="flex items-center space-x-2 mb-2">
-                          <ArrowRight className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium">Next Steps</span>
+                          <ArrowRight className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">Next Priority Steps</span>
                         </div>
-                        <p className="text-xs text-gray-600">Identify priority actions</p>
+                        <p className="text-xs text-gray-600">Critical next actions</p>
                       </Card>
 
                       <Card
-                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-purple-200 hover:border-l-purple-400"
-                        onClick={() => setInput("How can we leverage AI to accelerate our transformation?")}
+                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-orange-200 hover:border-l-orange-400 hover:bg-orange-50/50"
+                        onClick={() => {
+                          setActiveTab("chat");
+                          setInput(
+                            `How can we leverage AI and automation to accelerate our transformation by 25%? Include specific technology recommendations, process improvements, and implementation roadmap.`
+                          );
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
                       >
                         <div className="flex items-center space-x-2 mb-2">
-                          <Brain className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium">AI Optimization</span>
+                          <Brain className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">AI Acceleration</span>
                         </div>
-                        <p className="text-xs text-gray-600">Explore AI acceleration opportunities</p>
+                        <p className="text-xs text-gray-600">Boost transformation speed</p>
                       </Card>
 
                       <Card
-                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-purple-200 hover:border-l-purple-400"
-                        onClick={() => setInput("Can you help me prepare for the next stakeholder meeting?")}
+                        className="p-3 hover:shadow-lg transition-all cursor-pointer border-l-4 border-l-orange-200 hover:border-l-orange-400 hover:bg-orange-50/50"
+                        onClick={() => {
+                          setActiveTab("chat");
+                          setInput(`Prepare a stakeholder presentation for our next executive meeting. Include project status, key wins, challenges, upcoming milestones, and resource requirements.`);
+                          setTimeout(() => handleSendMessage(), 100);
+                        }}
                       >
                         <div className="flex items-center space-x-2 mb-2">
-                          <Users className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium">Meeting Prep</span>
+                          <Users className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">Executive Update</span>
                         </div>
-                        <p className="text-xs text-gray-600">Prepare stakeholder updates</p>
+                        <p className="text-xs text-gray-600">Stakeholder presentation</p>
                       </Card>
                     </div>
                   </div>
