@@ -125,3 +125,39 @@
     background-position: -100% 0%;
   }
 } 
+
+/* Custom overrides for specific components */
+.ai-assistant-sheet {
+  width: 920px !important;
+  max-width: none !important;
+  min-width: 920px !important;
+}
+
+@media (min-width: 640px) {
+  .ai-assistant-sheet {
+    width: 1000px !important;
+    min-width: 1000px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ai-assistant-sheet {
+    width: 1200px !important;
+    min-width: 1200px !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ai-assistant-sheet {
+    width: 1300px !important;
+    min-width: 1300px !important;
+  }
+}
+
+/* Ensure it doesn't exceed viewport width */
+@media (max-width: 1320px) {
+  .ai-assistant-sheet {
+    width: 90vw !important;
+    min-width: auto !important;
+  }
+} 
