@@ -1419,3 +1419,5 @@ Include technology vendor recommendations, implementation roadmap, and ROI proje
     </Sheet>
   );
 });
+
+AIAssistant.displayName = "AIAssistant";

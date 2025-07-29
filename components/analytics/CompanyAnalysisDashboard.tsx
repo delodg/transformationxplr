@@ -1605,7 +1605,7 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
                     <Award className="h-5 w-5" />
                     Report Summary
                   </CardTitle>
-                  <CardDescription>What's included in your export</CardDescription>
+                  <CardDescription>What&apos;s included in your export</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 text-sm">

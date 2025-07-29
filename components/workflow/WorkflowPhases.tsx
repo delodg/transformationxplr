@@ -346,6 +346,8 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
     }
   );
 
+  EnterprisePhaseActions.displayName = "EnterprisePhaseActions";
+
   // New phase state manipulation functions
   const handlePausePhase = useCallback(
     (phaseId: number) => {
@@ -557,6 +559,8 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
     );
   });
 
+  PhaseActionButtons.displayName = "PhaseActionButtons";
+
   // Calculate overall progress and phases for the new progress bar
   const overallProgress = Math.round(phases.reduce((sum, phase) => sum + phase.progress, 0) / phases.length);
   const completedPhases = phases.filter(p => p.status === "completed").length;
@@ -666,7 +670,7 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                 </Badge>
               </CardTitle>
               <CardDescription className="text-base mt-2 flex items-center space-x-4">
-                <span>Hackett Group's proven approach to finance transformation</span>
+                <span>Hackett Group&apos;s proven approach to finance transformation</span>
                 <div className="flex items-center space-x-1">
                   <div className={`w-2 h-2 rounded-full ${phaseStats.onTrack ? "bg-green-500" : "bg-amber-500"}`} />
                   <span className="text-sm font-medium">{phaseStats.onTrack ? "On Track" : "Needs Attention"}</span>
@@ -864,8 +868,8 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">7-Phase Transformation Methodology</h3>
                       <p className="text-sm text-gray-600 mb-4 max-w-md">
-                        Generate AI-powered workflow phases tailored to your company's transformation journey. Our advanced AI will create a comprehensive 7-phase methodology based on your specific
-                        needs.
+                        Generate AI-powered workflow phases tailored to your company&apos;s transformation journey. Our advanced AI will create a comprehensive 7-phase methodology based on your
+                        specific needs.
                       </p>
                     </div>
 

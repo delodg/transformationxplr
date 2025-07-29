@@ -1023,7 +1023,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-lg font-semibold text-purple-600">
                 <Rocket className="h-5 w-5" />
-                What You'll Achieve
+                What You&apos;ll Achieve
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1261,7 +1261,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
-                      <span className="font-medium">Create a new project using the "New Project" button</span>
+                      <span className="font-medium">Create a new project using the &quot;New Project&quot; button</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
@@ -1305,7 +1305,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           <DialogHeader>
             <DialogTitle>Confirm Company Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteDialog.company?.label}"? This action cannot be undone and will remove all associated data, including:
+              Are you sure you want to delete &quot;{deleteDialog.company?.label}&quot;? This action cannot be undone and will remove all associated data, including:
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>All workflow phases and progress</li>
                 <li>AI insights and recommendations</li>
