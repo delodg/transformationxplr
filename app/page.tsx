@@ -524,6 +524,13 @@ const TransformationXPLR: React.FC = () => {
         console.log("🔄 Force refreshing company data to ensure AI insights are displayed");
         await loadCompanyData(updatedCompany);
         setDashboardRefresh(prev => prev + 1);
+
+        // Auto-refresh page after AI generation to show all new data
+        setTimeout(() => {
+          console.log("🔄 Auto-refreshing page to display all new AI-generated content");
+          addNotification("🔄 Refreshing page to show your complete AI analysis...", "info");
+          window.location.reload();
+        }, 1500); // Give time for the user to see the completion notification
       }, 500);
 
       console.log("🎯 AI analysis orchestration completed successfully");
@@ -792,6 +799,7 @@ const TransformationXPLR: React.FC = () => {
                 <CommandCenter
                   currentProject={currentProject}
                   aiInsights={aiInsights}
+                  workflowPhases={workflowPhases}
                   selectedCompany={selectedCompany}
                   companies={companies}
                   onNewProject={handleNewProject}
@@ -864,6 +872,13 @@ const TransformationXPLR: React.FC = () => {
                         await loadCompanyData(currentProject);
 
                         addNotification(`🎉 AI analysis complete! Generated ${analysisResults.workflowPhases?.length || 0} workflow phases`, "success");
+
+                        // Auto-refresh page after manual AI generation to show all new data
+                        setTimeout(() => {
+                          console.log("🔄 Auto-refreshing page to display all new AI-generated content");
+                          addNotification("🔄 Refreshing page to show your complete AI analysis...", "info");
+                          window.location.reload();
+                        }, 2000); // Give time for the user to see the completion notification
                       } catch (error) {
                         console.error("❌ Error generating AI analysis:", error);
                         addNotification(`❌ Failed to generate AI analysis: ${error}`, "error");

@@ -44,37 +44,17 @@ import {
   BookOpen,
 } from "lucide-react";
 // Types for UI compatibility
-import { TransformationProject, AIInsight } from "../../types";
+import { TransformationProject, AIInsight, WorkflowPhase } from "../../types";
 
 // Simple toast notification function
 const showToast = (message: string, type: "success" | "info" | "warning" = "info") => {
-  // Create a simple toast element
-  const toast = document.createElement("div");
-  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all duration-300 ${
-    type === "success" ? "bg-green-600" : type === "warning" ? "bg-yellow-600" : "bg-blue-600"
-  }`;
-  toast.textContent = message;
-  toast.style.transform = "translateX(100%)";
-
-  document.body.appendChild(toast);
-
-  // Animate in
-  setTimeout(() => {
-    toast.style.transform = "translateX(0)";
-  }, 100);
-
-  // Remove after 3 seconds
-  setTimeout(() => {
-    toast.style.transform = "translateX(100%)";
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 300);
-  }, 3000);
+  console.log(`Toast [${type.toUpperCase()}]: ${message}`);
 };
 
 interface CommandCenterProps {
   currentProject: TransformationProject;
   aiInsights: AIInsight[];
+  workflowPhases: WorkflowPhase[]; // Add workflow phases data
   companies?: any[]; // Real companies from database
   onNewProject: () => void;
   onShowAIAssistant: () => void;
@@ -110,6 +90,7 @@ interface CompanyOption {
 export const CommandCenter: React.FC<CommandCenterProps> = ({
   currentProject,
   aiInsights,
+  workflowPhases,
   companies = [], // Real companies from database
   onNewProject,
   onShowAIAssistant,
@@ -128,13 +109,41 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   // Expose help modal functionality to parent
   React.useEffect(() => {
     if (onShowHelp) {
-      // Replace the onShowHelp with our modal trigger
       (window as any).showHelpModal = () => {
         setShowHelpModal(true);
-        showToast("Opening User Guide", "info");
       };
     }
   }, [onShowHelp]);
+
+  // Calculate real progress from workflow phases
+  const realProgressData = useMemo(() => {
+    if (!workflowPhases || workflowPhases.length === 0) {
+      return {
+        totalProgress: currentProject.progress || 0,
+        completedPhases: 0,
+        currentPhase: currentProject.currentPhase || 1,
+        totalPhases: 7,
+      };
+    }
+
+    const completedPhases = workflowPhases.filter(phase => phase.status === "completed").length;
+    const inProgressPhases = workflowPhases.filter(phase => phase.status === "in-progress").length;
+    const totalPhases = workflowPhases.length;
+
+    // Calculate overall progress based on phase completion
+    const totalProgress = Math.round((completedPhases * 100 + inProgressPhases * 50) / totalPhases);
+
+    // Find the current active phase
+    const currentActivePhase = workflowPhases.find(phase => phase.status === "in-progress" || phase.status === "ai-enhanced");
+    const currentPhase = currentActivePhase ? currentActivePhase.id : completedPhases < totalPhases ? completedPhases + 1 : totalPhases;
+
+    return {
+      totalProgress,
+      completedPhases,
+      currentPhase,
+      totalPhases,
+    };
+  }, [workflowPhases, currentProject]);
 
   // Memoized calculations for better performance
   const formatCurrency = useCallback((value: number) => {
@@ -179,6 +188,19 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   console.log("🏢 CommandCenter companies:", companies?.length || 0, "real companies");
   console.log("🎯 Company options:", companyOptions.length, "options available");
 
+  const phaseFilteredInsights = useMemo(() => {
+    return aiInsights.filter(insight => insight.phase === realProgressData.currentPhase);
+  }, [aiInsights, realProgressData.currentPhase]);
+
+  // Updated progress status calculation using real data
+  const progressStatus = useMemo(() => {
+    const progress = realProgressData.totalProgress;
+    if (progress >= 80) return { color: "green", status: "Excellent" };
+    if (progress >= 60) return { color: "blue", status: "On Track" };
+    if (progress >= 40) return { color: "yellow", status: "In Progress" };
+    return { color: "red", status: "Needs Attention" };
+  }, [realProgressData.totalProgress]);
+
   // Enhanced insights calculations
   const phaseInsights = useMemo(() => {
     return aiInsights.filter(insight => insight.phase === currentProject.currentPhase);
@@ -201,15 +223,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     const confidenceSum = aiInsights.reduce((sum, insight) => sum + insight.confidence, 0);
     return Math.round(confidenceSum / aiInsights.length);
   }, [aiInsights]);
-
-  // Enhanced progress calculation
-  const progressStatus = useMemo(() => {
-    const progress = Math.round(currentProject.progress); // Ensure whole numbers
-    if (progress >= 80) return { color: "green", status: "Excellent" };
-    if (progress >= 60) return { color: "blue", status: "On Track" };
-    if (progress >= 40) return { color: "yellow", status: "In Progress" };
-    return { color: "orange", status: "Starting" };
-  }, [currentProject.progress]);
 
   // Enhanced time calculations
   const timeMetrics = useMemo(() => {
@@ -310,7 +323,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               </Badge>
               <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
                 <Activity className="h-3 w-3 mr-1" />
-                Phase {currentProject.currentPhase} Active
+                Phase {realProgressData.currentPhase} Active
               </Badge>
             </div>
           </div>
@@ -440,7 +453,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   {progressStatus.status}
                 </Badge>
               </div>
-              <div className="text-2xl font-bold">{Math.round(currentProject.progress)}%</div>
+              <div className="text-2xl font-bold">{realProgressData.totalProgress}%</div>
               <div className="text-sm text-blue-100">Project Complete</div>
               <div className="text-xs text-blue-200 mt-1">{timeMetrics.remainingDays} days remaining</div>
             </div>
@@ -529,7 +542,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                 <span className="font-semibold text-gray-900">Overall Progress</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-gray-900">{Math.round(currentProject.progress)}%</span>
+                <span className="text-2xl font-bold text-gray-900">{realProgressData.totalProgress}%</span>
                 <Badge
                   variant="outline"
                   className={`text-xs ${
@@ -547,7 +560,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               </div>
             </div>
             <div className="enterprise-progress-bar mb-3">
-              <div className="progress-fill" style={{ width: `${Math.round(currentProject.progress)}%` }}></div>
+              <div className="progress-fill" style={{ width: `${realProgressData.totalProgress}%` }}></div>
             </div>
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>Started {formatDate(currentProject.startDate)}</span>
@@ -676,90 +689,75 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                Phase {currentProject.currentPhase}/7
+                Phase {realProgressData.currentPhase}/{realProgressData.totalPhases}
               </Badge>
               <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                {[1, 2, 3, 4, 5, 6, 7].filter(p => currentProject.currentPhase > p).length} Completed
+                {realProgressData.completedPhases} Completed
               </Badge>
             </div>
           </div>
         </div>
 
         <div className="p-6">
-          {/* Enhanced Phase Grid with Better Styling */}
+          {/* Enhanced Phase Grid with Real Phase Data */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7].map(phaseNum => {
-              const isCurrentPhase = currentProject.currentPhase === phaseNum;
-              const isCompleted = currentProject.currentPhase > phaseNum;
-              const isPending = currentProject.currentPhase < phaseNum;
+            {workflowPhases.map(phase => {
+              const isCurrentPhase = realProgressData.currentPhase === phase.id;
+              const isCompleted = phase.status === "completed";
+              const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
+              const isPending = phase.status === "pending";
 
               return (
                 <div
-                  key={phaseNum}
+                  key={phase.id}
                   className={`
                     analytics-metric-card p-4 cursor-pointer transition-all duration-200 hover:scale-105 relative
-                    ${isCurrentPhase ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
-                    ${isCompleted ? 'bg-green-50 border-green-200' : ''}
-                    ${isPending ? 'bg-gray-50 border-gray-200' : ''}
+                    ${isCurrentPhase ? "ring-2 ring-blue-500 bg-blue-50" : ""}
+                    ${isCompleted ? "bg-green-50 border-green-200" : ""}
+                    ${isInProgress ? "bg-blue-50 border-blue-200" : ""}
+                    ${isPending ? "bg-gray-50 border-gray-200" : ""}
                   `}
                   onClick={() => {
-                    console.log(`🚀 Phase Navigation: Attempting to navigate to Phase ${phaseNum}`);
-                    console.log("Current project:", currentProject);
-                    console.log("onNavigateToPhase callback:", onNavigateToPhase);
-
-                    if (!onNavigateToPhase) {
-                      console.error("❌ onNavigateToPhase callback is not defined!");
-                      showToast("Navigation error: Callback not defined", "warning");
-                      return;
+                    console.log(`🚀 Phase Navigation: Attempting to navigate to Phase ${phase.id}`);
+                    console.log("Phase data:", phase);
+                    if (onNavigateToPhase) {
+                      onNavigateToPhase(phase.id);
+                      showToast(`Navigating to Phase ${phase.id}: ${phase.title}`, "success");
+                    } else {
+                      console.warn("⚠️ onNavigateToPhase not available");
+                      showToast("Navigation not available", "warning");
                     }
-
-                    onNavigateToPhase(phaseNum);
-                    showToast(`Navigated to Phase ${phaseNum}`, "success");
-                    console.log(`✅ Navigation to Phase ${phaseNum} triggered successfully`);
                   }}
                 >
-                  {/* Status Badge */}
-                  {isCurrentPhase && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                  )}
-                  {isCompleted && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
-                  )}
-
-                  {/* Phase Icon */}
-                  <div className="flex items-center justify-center mb-3">
+                  {/* Phase Status Icon */}
+                  <div className="flex items-center justify-center mb-2">
                     <div
                       className={`
-                        w-12 h-12 rounded-lg flex items-center justify-center font-bold text-white shadow-sm
-                        ${isCurrentPhase ? 'bg-blue-600' : ''}
-                        ${isCompleted ? 'bg-green-600' : ''}
-                        ${isPending ? 'bg-gray-400' : ''}
-                      `}
+                      w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold
+                      ${isCompleted ? "bg-green-100 text-green-600" : ""}
+                      ${isInProgress ? "bg-blue-100 text-blue-600" : ""}
+                      ${isPending ? "bg-gray-100 text-gray-600" : ""}
+                    `}
                     >
-                      {isCompleted ? (
-                        <CheckCircle className="h-6 w-6" />
-                      ) : isCurrentPhase ? (
-                        <Activity className="h-6 w-6 animate-pulse" />
-                      ) : (
-                        <span className="text-lg">{phaseNum}</span>
-                      )}
+                      {isCompleted ? <CheckCircle className="h-6 w-6" /> : isInProgress ? <Activity className="h-6 w-6" /> : phase.id}
                     </div>
                   </div>
 
-                  {/* Phase Label */}
-                  <div className="text-center">
-                    <div className="text-sm font-semibold text-gray-900 mb-1">Phase {phaseNum}</div>
+                  {/* Phase Title */}
+                  <h4 className="text-xs font-medium text-gray-900 text-center mb-1 leading-tight">{phase.title}</h4>
+
+                  {/* Status Badge */}
+                  <div className="flex justify-center">
                     <Badge
                       variant="outline"
-                      className={`text-xs ${
-                        isCurrentPhase
-                          ? 'bg-blue-100 text-blue-800 border-blue-200'
-                          : isCompleted
-                          ? 'bg-green-100 text-green-800 border-green-200'
-                          : 'bg-gray-100 text-gray-600 border-gray-200'
-                      }`}
+                      className={`
+                        text-xs px-2 py-1
+                        ${isCompleted ? "bg-green-100 text-green-700 border-green-200" : ""}
+                        ${isInProgress ? "bg-blue-100 text-blue-700 border-blue-200" : ""}
+                        ${isPending ? "bg-gray-100 text-gray-600 border-gray-200" : ""}
+                      `}
                     >
-                      {isCurrentPhase ? 'Current' : isCompleted ? 'Complete' : 'Pending'}
+                      {isCompleted ? "Complete" : isInProgress ? "Current" : "Pending"}
                     </Badge>
                   </div>
                 </div>
@@ -796,7 +794,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </h4>
           <p className="analytics-subtitle">Access key features and navigation tools</p>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div
