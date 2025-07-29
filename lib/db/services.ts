@@ -1,18 +1,74 @@
-import { db, companies, chatMessages, aiInsights, workflowPhases, questionnaires, analysisResults, userSessions } from './index';
-import { eq, and, desc, asc } from 'drizzle-orm';
-import type { 
-  NewCompany, 
-  Company, 
-  NewChatMessage, 
-  ChatMessage, 
-  NewAIInsight, 
+import { db, companies, chatMessages, aiInsights, workflowPhases, questionnaires, analysisResults, userSessions, users } from "./index";
+import { eq, and, desc, asc, isNull } from "drizzle-orm";
+import type {
+  NewCompany,
+  Company,
+  NewChatMessage,
+  ChatMessage,
+  NewAIInsight,
   AIInsight,
   NewWorkflowPhase,
   WorkflowPhase,
   NewQuestionnaire,
   NewAnalysisResult,
-  NewUserSession
-} from './schema';
+  NewUserSession,
+  NewUser,
+} from "./schema";
+
+// ===============================
+// USER SERVICES
+// ===============================
+
+export async function ensureUserExists(userId: string): Promise<boolean> {
+  try {
+    // Check if user exists first
+    const [existingUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+    if (existingUser) {
+      console.log(`User ${userId} already exists`);
+      return true;
+    }
+
+    // Create a basic user record if it doesn't exist
+    console.log(`Creating user record for ${userId}`);
+    await db.insert(users).values({
+      id: userId,
+      email: `${userId}@temp.local`, // Temporary email, will be updated by webhook
+      firstName: null,
+      lastName: null,
+      imageUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log(`Successfully created user record for ${userId}`);
+
+    // Verify the user was created
+    const [verifyUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!verifyUser) {
+      console.error(`Failed to verify user creation for ${userId}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error ensuring user exists:", error);
+
+    // If it's a unique constraint error, the user might already exist
+    if (error && typeof error === "object" && "code" in error && error.code === "SQLITE_CONSTRAINT") {
+      console.log(`User ${userId} might already exist (constraint error), checking again...`);
+      try {
+        const [existingUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        return !!existingUser;
+      } catch (checkError) {
+        console.error("Error checking user existence after constraint error:", checkError);
+        return false;
+      }
+    }
+
+    return false;
+  }
+}
 
 // ===============================
 // COMPANY SERVICES
@@ -24,19 +80,11 @@ export async function createCompany(company: NewCompany): Promise<Company> {
 }
 
 export async function getCompaniesByUser(userId: string): Promise<Company[]> {
-  return await db
-    .select()
-    .from(companies)
-    .where(eq(companies.userId, userId))
-    .orderBy(desc(companies.updatedAt));
+  return await db.select().from(companies).where(eq(companies.userId, userId)).orderBy(desc(companies.updatedAt));
 }
 
 export async function getCompanyById(companyId: string): Promise<Company | null> {
-  const [company] = await db
-    .select()
-    .from(companies)
-    .where(eq(companies.id, companyId))
-    .limit(1);
+  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
   return company || null;
 }
 
@@ -63,11 +111,7 @@ export async function createChatMessage(message: NewChatMessage): Promise<ChatMe
 }
 
 export async function getChatMessagesByCompany(companyId: string): Promise<ChatMessage[]> {
-  return await db
-    .select()
-    .from(chatMessages)
-    .where(eq(chatMessages.companyId, companyId))
-    .orderBy(asc(chatMessages.timestamp));
+  return await db.select().from(chatMessages).where(eq(chatMessages.companyId, companyId)).orderBy(asc(chatMessages.timestamp));
 }
 
 export async function deleteChatMessagesByCompany(companyId: string): Promise<void> {
@@ -89,11 +133,7 @@ export async function createAIInsight(insight: NewAIInsight): Promise<AIInsight>
 }
 
 export async function getAIInsightsByCompany(companyId: string): Promise<AIInsight[]> {
-  return await db
-    .select()
-    .from(aiInsights)
-    .where(eq(aiInsights.companyId, companyId))
-    .orderBy(desc(aiInsights.createdAt));
+  return await db.select().from(aiInsights).where(eq(aiInsights.companyId, companyId)).orderBy(desc(aiInsights.createdAt));
 }
 
 export async function updateAIInsight(insightId: string, updates: Partial<NewAIInsight>): Promise<AIInsight> {
@@ -124,11 +164,7 @@ export async function createWorkflowPhase(phase: NewWorkflowPhase): Promise<Work
 }
 
 export async function getWorkflowPhasesByCompany(companyId: string): Promise<WorkflowPhase[]> {
-  return await db
-    .select()
-    .from(workflowPhases)
-    .where(eq(workflowPhases.companyId, companyId))
-    .orderBy(asc(workflowPhases.phaseNumber));
+  return await db.select().from(workflowPhases).where(eq(workflowPhases.companyId, companyId)).orderBy(asc(workflowPhases.phaseNumber));
 }
 
 export async function updateWorkflowPhase(phaseId: string, updates: Partial<NewWorkflowPhase>): Promise<WorkflowPhase> {
@@ -154,16 +190,15 @@ export async function createQuestionnaire(questionnaire: NewQuestionnaire): Prom
 }
 
 export async function getQuestionnairesByCompany(companyId: string, type?: string): Promise<any[]> {
-  const query = db
-    .select()
-    .from(questionnaires)
-    .where(eq(questionnaires.companyId, companyId));
-  
   if (type) {
-    query.where(and(eq(questionnaires.companyId, companyId), eq(questionnaires.type, type)));
+    return await db
+      .select()
+      .from(questionnaires)
+      .where(and(eq(questionnaires.companyId, companyId), eq(questionnaires.type, type)))
+      .orderBy(desc(questionnaires.createdAt));
+  } else {
+    return await db.select().from(questionnaires).where(eq(questionnaires.companyId, companyId)).orderBy(desc(questionnaires.createdAt));
   }
-  
-  return await query.orderBy(desc(questionnaires.createdAt));
 }
 
 // ===============================
@@ -175,16 +210,15 @@ export async function createAnalysisResult(analysis: NewAnalysisResult): Promise
 }
 
 export async function getAnalysisResultsByCompany(companyId: string, type?: string): Promise<any[]> {
-  const query = db
-    .select()
-    .from(analysisResults)
-    .where(eq(analysisResults.companyId, companyId));
-  
   if (type) {
-    query.where(and(eq(analysisResults.companyId, companyId), eq(analysisResults.type, type)));
+    return await db
+      .select()
+      .from(analysisResults)
+      .where(and(eq(analysisResults.companyId, companyId), eq(analysisResults.type, type)))
+      .orderBy(desc(analysisResults.createdAt));
+  } else {
+    return await db.select().from(analysisResults).where(eq(analysisResults.companyId, companyId)).orderBy(desc(analysisResults.createdAt));
   }
-  
-  return await query.orderBy(desc(analysisResults.createdAt));
 }
 
 // ===============================
@@ -206,7 +240,7 @@ export async function getUserActiveSessions(userId: string): Promise<any[]> {
   return await db
     .select()
     .from(userSessions)
-    .where(and(eq(userSessions.userId, userId), eq(userSessions.endedAt, null)))
+    .where(and(eq(userSessions.userId, userId), isNull(userSessions.endedAt)))
     .orderBy(desc(userSessions.lastActivity));
 }
 
@@ -238,30 +272,30 @@ export function stringifyJSONField<T>(value: T): string {
 export async function migrateLocalStorageToDatabase(userId: string): Promise<void> {
   // This function will help migrate existing localStorage data to database
   // Can be called when user first signs in after implementing database
-  console.log('Starting localStorage migration for user:', userId);
-  
-  if (typeof window === 'undefined') return;
-  
+  console.log("Starting localStorage migration for user:", userId);
+
+  if (typeof window === "undefined") return;
+
   try {
     // Get all localStorage keys that match our patterns
     const storageKeys = Object.keys(localStorage);
-    const companyKeys = storageKeys.filter(key => key.startsWith('ai-conversation-'));
-    
+    const companyKeys = storageKeys.filter(key => key.startsWith("ai-conversation-"));
+
     for (const key of companyKeys) {
-      const companyId = key.replace('ai-conversation-', '');
+      const companyId = key.replace("ai-conversation-", "");
       const conversationData = localStorage.getItem(key);
-      
+
       if (conversationData) {
         try {
           const messages = JSON.parse(conversationData);
-          
+
           // Check if this company already exists in database
           const existingCompany = await getCompanyById(companyId);
           if (!existingCompany) {
             // Skip if company doesn't exist - we can't migrate without company context
             continue;
           }
-          
+
           // Check if messages already exist
           const existingMessages = await getChatMessagesByCompany(companyId);
           if (existingMessages.length === 0 && Array.isArray(messages)) {
@@ -278,7 +312,7 @@ export async function migrateLocalStorageToDatabase(userId: string): Promise<voi
               error: msg.error || null,
               fallback: msg.fallback || false,
             }));
-            
+
             await bulkCreateChatMessages(messagesToInsert);
             console.log(`Migrated ${messagesToInsert.length} messages for company ${companyId}`);
           }
@@ -287,9 +321,9 @@ export async function migrateLocalStorageToDatabase(userId: string): Promise<voi
         }
       }
     }
-    
-    console.log('LocalStorage migration completed for user:', userId);
+
+    console.log("LocalStorage migration completed for user:", userId);
   } catch (error) {
-    console.error('Error during localStorage migration:', error);
+    console.error("Error during localStorage migration:", error);
   }
-} 
+}

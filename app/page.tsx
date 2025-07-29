@@ -10,9 +10,15 @@ import { Target, Workflow, BarChart3, Database, CheckCircle, AlertCircle, Trendi
 import { CommandCenter } from "../components/workflow/CommandCenter";
 import { WorkflowPhases } from "../components/workflow/WorkflowPhases";
 import { AIAssistant } from "../components/ai/AIAssistant";
+import { AIAnalysisProgress } from "../components/ai/AIAnalysisProgress";
 import { ClientOnboardingModal } from "../components/onboarding/ClientOnboarding";
 import { GuidedTour } from "../components/guidance/GuidedTour";
+import { CompanyAnalysisDashboard } from "../components/analytics";
 import { useUser } from "@clerk/nextjs";
+
+// Import additional UI components for the integrated header
+import { SignedIn, UserButton } from "@clerk/nextjs";
+import { AIAssistantButton } from "@/components/ui/ai-assistant-button";
 
 // Types for UI compatibility
 import { TransformationProject, AIInsight as UIAIInsight, WorkflowPhase as UIWorkflowPhase } from "../types";
@@ -22,6 +28,30 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const TransformationXPLR: React.FC = () => {
   const { user, isLoaded } = useUser();
+
+  // Show loading state while Clerk is initializing to prevent hydration issues
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Transformation XPLR...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure user is authenticated before proceeding
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600">Please sign in to access your transformation platform.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Core application state - now database-driven
   const [activeTab, setActiveTab] = useState("command-center");
@@ -34,8 +64,17 @@ const TransformationXPLR: React.FC = () => {
   // Modal and UI state
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
+  const [currentOnboardingData, setCurrentOnboardingData] = useState<any>(null);
+  const [currentCreatedCompany, setCurrentCreatedCompany] = useState<any>(null);
   const [isAnalyticsMode, setIsAnalyticsMode] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string; type: "success" | "info" | "warning" | "error"; timestamp: string }[]>([]);
+  const [dashboardRefresh, setDashboardRefresh] = useState(0); // Add refresh trigger for dashboard
+
+  // Utility function to generate unique IDs
+  const generateId = () => {
+    return Math.random().toString(36).substr(2, 9);
+  };
 
   // Guided tour state
   const [showGuidedTour, setShowGuidedTour] = useState(false);
@@ -43,36 +82,24 @@ const TransformationXPLR: React.FC = () => {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Show loading state while Clerk loads
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your transformation dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show authentication message if no user
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
-          <p className="text-gray-600">Please sign in to access your transformation platform.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Load user's companies and data
   useEffect(() => {
-    if (user) {
+    if (user && isLoaded) {
       loadUserData();
     }
-  }, [user]);
+  }, [user, isLoaded]);
+
+  // Check for first-time user and show onboarding tour
+  useEffect(() => {
+    if (user && isLoaded && companies.length > 0) {
+      const hasVisitedBefore = localStorage.getItem(`transformation-xplr-visited-${user.id}`);
+      if (!hasVisitedBefore) {
+        setTourType("onboarding");
+        setShowGuidedTour(true);
+        localStorage.setItem(`transformation-xplr-visited-${user.id}`, "true");
+      }
+    }
+  }, [user?.id, companies.length, isLoaded]);
 
   const loadUserData = async () => {
     try {
@@ -181,27 +208,18 @@ const TransformationXPLR: React.FC = () => {
     }
   };
 
-  // Check for first-time user and show onboarding tour
-  useEffect(() => {
-    if (companies.length > 0) {
-      const hasVisitedBefore = localStorage.getItem(`transformation-xplr-visited-${user.id}`);
-      if (!hasVisitedBefore) {
-        setTourType("onboarding");
-        setShowGuidedTour(true);
-        localStorage.setItem(`transformation-xplr-visited-${user.id}`, "true");
-      }
-    }
-  }, [user.id, companies.length]);
-
   // Enhanced notification system
   const addNotification = (message: string, type: "success" | "info" | "warning" | "error" = "success") => {
     const notification = {
-      id: Date.now().toString(),
+      id: generateId(),
       message,
       type,
       timestamp: new Date().toISOString(),
     };
+
+    console.log(`📢 Notification [${type.toUpperCase()}]: ${message}`);
     setNotifications(prev => [...prev, notification].slice(-3));
+
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== notification.id));
     }, 5000);
@@ -213,16 +231,33 @@ const TransformationXPLR: React.FC = () => {
     setShowOnboarding(true);
   };
 
+  // 🔥 NEW: AI Assistant button handler
+  const handleAIAssistantClick = () => {
+    console.log("🤖 Axel AI Assistant activated from header!");
+    setShowAIAssistant(true);
+    addNotification("AI Assistant Axel activated!", "info");
+  };
+
   const handleClientOnboardingSubmit = async (data: any) => {
+    console.log("🎯 QUESTIONNAIRE SUBMITTED!");
+    console.log("📋 Questionnaire data received:", data);
+
     try {
-      addNotification("Analyzing company data with AI...", "info");
-      
+      // Store the onboarding data first
+      console.log("💾 Storing onboarding data");
+      setCurrentOnboardingData(data);
+
+      // Close questionnaire modal
+      console.log("❌ Closing questionnaire modal");
+      setShowOnboarding(false);
+
+      // Show notification that company creation is starting
+      addNotification("🏢 Creating your company profile...", "info");
+
+      // Create company immediately
+      console.log("🏢 CREATING COMPANY IMMEDIATELY");
       const companyId = generateId();
-      
-      // Generate AI analysis based on questionnaire data
-      const aiAnalysis = await generateCompanyAnalysis(data);
-      
-      // Create company record
+
       const newCompanyData = {
         id: companyId,
         clientName: data.companyName,
@@ -230,13 +265,13 @@ const TransformationXPLR: React.FC = () => {
         engagementType: "Full Transformation",
         status: "initiation" as const,
         progress: 5,
-        aiAcceleration: aiAnalysis.estimatedAIAcceleration,
+        aiAcceleration: 0, // Will be updated after AI analysis
         startDate: new Date().toISOString().split("T")[0],
-        estimatedCompletion: aiAnalysis.estimatedCompletion,
+        estimatedCompletion: `${new Date().getFullYear()}-12-31`, // Will be updated after AI analysis
         teamMembers: JSON.stringify([]),
-        hackettIPMatches: aiAnalysis.hackettMatches,
+        hackettIPMatches: 0, // Will be updated after AI analysis
         region: data.region,
-        projectValue: aiAnalysis.estimatedValue,
+        projectValue: 0, // Will be updated after AI analysis
         currentPhase: 1,
         revenue: data.revenue,
         employees: data.employees,
@@ -247,37 +282,128 @@ const TransformationXPLR: React.FC = () => {
         budget: data.budget,
       };
 
-      const response = await fetch('/api/companies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      console.log("🏢 Creating company with data:", newCompanyData);
+
+      // Create company record
+      const response = await fetch("/api/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newCompanyData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create company');
+        throw new Error("Failed to create company");
       }
 
       const { company: newCompany } = await response.json();
+      console.log("✅ Company created successfully:", newCompany);
 
-      // Update state
+      // Show success notification with company details
+      addNotification(`✅ Company "${data.companyName}" created successfully! Now generating AI analysis...`, "success");
+
+      // Update companies list immediately
       const updatedCompanies = [...companies, newCompany];
       setCompanies(updatedCompanies);
       setSelectedCompany(newCompany.id);
-      await loadCompanyData(newCompany);
-      
-      setShowOnboarding(false);
-      addNotification(`AI analysis complete! Created transformation project for ${data.companyName}`, "success");
-      
-      // Auto-start onboarding tour
-      setTimeout(() => {
-        setTourType("onboarding");
-        setShowGuidedTour(true);
-      }, 2000);
-      setActiveTab("command-center");
-      
+
+      // Store the created company for AI analysis
+      setCurrentCreatedCompany(newCompany);
+
+      // Trigger dashboard refresh to show new company
+      setDashboardRefresh(prev => prev + 1);
+
+      // Now start AI analysis
+      console.log("🧠 Opening AI analysis modal for AI generation");
+      setShowAIAnalysis(true);
+
+      console.log("✅ Company creation and AI analysis initiation completed successfully");
     } catch (error) {
-      console.error('Error creating company analysis:', error);
-      addNotification('Error creating company analysis. Please try again.', 'error');
+      console.error("❌ Error in company creation:", error);
+      addNotification("❌ Error creating company. Please try again.", "error");
+    }
+  };
+
+  const handleAIAnalysisComplete = async (analysisResults: any) => {
+    try {
+      console.log("🔍 AI Analysis Results received:", analysisResults);
+      console.log("🔍 Analysis has insights?", !!analysisResults.insights);
+      console.log("🔍 Analysis has workflowPhases?", !!analysisResults.workflowPhases);
+      if (analysisResults.insights) {
+        console.log("🔍 Number of insights:", analysisResults.insights.length);
+      }
+      if (analysisResults.workflowPhases) {
+        console.log("🔍 Number of workflow phases:", analysisResults.workflowPhases.length);
+      }
+
+      if (!currentCreatedCompany) {
+        console.error("❌ No company was created! This should not happen.");
+        addNotification("❌ Error: No company found to update with AI analysis.", "error");
+        return;
+      }
+
+      console.log("🔄 Processing AI analysis completion for company:", currentCreatedCompany.id);
+      const companyId = currentCreatedCompany.id;
+
+      // Note: AI insights and workflow phases are now automatically saved by the generate-analysis endpoint
+      // We just need to update the company record and refresh the UI
+
+      const updatedCompanyData = {
+        aiAcceleration: analysisResults.estimatedAIAcceleration || 35,
+        estimatedCompletion: analysisResults.estimatedCompletion || `${new Date().getFullYear()}-12-31`,
+        hackettIPMatches: analysisResults.hackettMatches || 800,
+        projectValue: analysisResults.estimatedValue || 2500000,
+        progress: 15, // Update progress to reflect analysis completion
+      };
+
+      console.log("📊 Updating company with AI results:", updatedCompanyData);
+
+      // Update company record with AI analysis results
+      const updateResponse = await fetch(`/api/companies/${companyId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedCompanyData),
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error("Failed to update company with AI results");
+      }
+
+      const { company: updatedCompany } = await updateResponse.json();
+      console.log("✅ Company updated successfully:", updatedCompany);
+
+      // Update state with the enhanced company
+      const updatedCompanies = companies.map(c => (c.id === companyId ? updatedCompany : c));
+      setCompanies(updatedCompanies);
+
+      console.log("📈 Loading enhanced company data for dashboard...");
+      await loadCompanyData(updatedCompany);
+
+      // Close AI analysis modal and switch to dashboard
+      setShowAIAnalysis(false);
+
+      // **CRITICAL FIX**: Switch to analytics tab to show the new AI insights and phases
+      setActiveTab("analytics");
+
+      // Show success notification
+      addNotification(
+        `🎉 AI analysis complete! Generated ${analysisResults.insights?.length || 0} insights and ${analysisResults.workflowPhases?.length || 0} workflow phases for ${updatedCompany.clientName}`,
+        "success"
+      );
+
+      // **CRITICAL FIX**: Trigger dashboard refresh to show updated company with AI results
+      setDashboardRefresh(prev => prev + 1);
+
+      // **CRITICAL FIX**: Force reload of the company data to ensure insights and phases are displayed
+      setTimeout(async () => {
+        console.log("🔄 Force refreshing company data to ensure AI insights are displayed");
+        await loadCompanyData(updatedCompany);
+        setDashboardRefresh(prev => prev + 1);
+      }, 500);
+
+      console.log("🎯 AI analysis orchestration completed successfully");
+    } catch (error) {
+      console.error("❌ Error in AI analysis completion:", error);
+      addNotification("❌ Error processing AI analysis results. Please try refreshing.", "error");
     }
   };
 
@@ -395,6 +521,23 @@ const TransformationXPLR: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingTop: "64px" }}>
+      {/* Integrated Header with AI Assistant Button */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm" style={{ height: "64px" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold text-gray-900">Transformation XPLR</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <SignedIn>
+                <AIAssistantButton onClick={handleAIAssistantClick} />
+                <UserButton />
+              </SignedIn>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Notifications */}
       {notifications.length > 0 && (
         <div className="fixed top-20 right-4 z-50 space-y-2">
@@ -507,19 +650,7 @@ const TransformationXPLR: React.FC = () => {
 
             <TabsContent value="analytics">
               <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>AI-Generated Analytics Dashboard</CardTitle>
-                    <CardDescription>Real-time insights and performance metrics for {currentProject.clientName}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Advanced analytics dashboard coming soon</p>
-                      <p className="text-sm text-gray-500 mt-2">AI-powered insights will be displayed here</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <CompanyAnalysisDashboard refreshTrigger={dashboardRefresh} onDataChange={() => setDashboardRefresh(prev => prev + 1)} />
               </div>
             </TabsContent>
 
@@ -550,6 +681,8 @@ const TransformationXPLR: React.FC = () => {
       {currentProject && <AIAssistant isVisible={showAIAssistant} onClose={() => setShowAIAssistant(false)} currentProject={currentProject} aiInsights={aiInsights} workflowPhases={workflowPhases} />}
 
       <ClientOnboardingModal isVisible={showOnboarding} onClose={() => setShowOnboarding(false)} onSubmit={handleClientOnboardingSubmit} />
+
+      <AIAnalysisProgress isVisible={showAIAnalysis} companyData={currentOnboardingData} onComplete={handleAIAnalysisComplete} onClose={() => setShowAIAnalysis(false)} />
 
       {/* Guided Tour */}
       {/* <GuidedTour tourType={tourType} onComplete={handleTourComplete} onSkip={handleTourSkip} /> */}
