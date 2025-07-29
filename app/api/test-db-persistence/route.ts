@@ -25,6 +25,7 @@ import {
   ensureUserExists,
   generateId
 } from "@/lib/db/services";
+import { eq } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
@@ -296,7 +297,7 @@ export async function GET(req: NextRequest) {
     // Clean up test data
     try {
       if (testResults.companyCreation) {
-        await db.delete(companies).where({ id: testCompanyId });
+        await db.delete(companies).where(eq(companies.id, testCompanyId));
         console.log("🧹 Test data cleaned up");
       }
     } catch (error) {
