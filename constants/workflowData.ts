@@ -208,6 +208,7 @@ export const SAMPLE_PROJECT: TransformationProject = COMPANY_DATASETS.mastec.pro
 export const WORKFLOW_PHASES: WorkflowPhase[] = [
   {
     id: 1,
+    phaseNumber: 1,
     title: "Project Initiation & Client Onboarding",
     description: "AI-enhanced client intelligence gathering with automated data ingestion and Hackett IP matching",
     status: "completed",
@@ -232,6 +233,7 @@ export const WORKFLOW_PHASES: WorkflowPhase[] = [
   },
   {
     id: 2,
+    phaseNumber: 2,
     title: "Parallel Workstream Management",
     description: "AI-orchestrated data collection with intelligent survey generation and automated interview scheduling",
     status: "completed",
@@ -257,6 +259,7 @@ export const WORKFLOW_PHASES: WorkflowPhase[] = [
   },
   {
     id: 3,
+    phaseNumber: 3,
     title: "AI-Powered Synthesis & Analysis",
     description: "Intelligent data triangulation with automated gap analysis and benchmark comparison",
     status: "in-progress",
@@ -282,6 +285,7 @@ export const WORKFLOW_PHASES: WorkflowPhase[] = [
   },
   {
     id: 4,
+    phaseNumber: 4,
     title: "Initiative Identification & Prioritization",
     description: "AI-generated recommendations with intelligent value quantification and ROI analysis",
     status: "pending",
@@ -307,6 +311,7 @@ export const WORKFLOW_PHASES: WorkflowPhase[] = [
   },
   {
     id: 5,
+    phaseNumber: 5,
     title: "Roadmap Development",
     description: "Dynamic roadmap construction with automated dependency mapping and resource optimization",
     status: "pending",
@@ -332,6 +337,7 @@ export const WORKFLOW_PHASES: WorkflowPhase[] = [
   },
   {
     id: 6,
+    phaseNumber: 6,
     title: "Client Review & Handover",
     description: "Interactive presentation with collaborative decision-making and professional deliverable generation",
     status: "pending",
@@ -357,6 +363,7 @@ export const WORKFLOW_PHASES: WorkflowPhase[] = [
   },
   {
     id: 7,
+    phaseNumber: 7,
     title: "Implementation Tracking",
     description: "Continuous monitoring with AI-powered progress analysis and benefit realization tracking",
     status: "pending",

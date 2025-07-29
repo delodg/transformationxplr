@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import {
   Zap,
   Brain,
@@ -42,6 +42,8 @@ import {
   Workflow,
   Search,
   BookOpen,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 // Types for UI compatibility
 import { TransformationProject, AIInsight, WorkflowPhase } from "../../types";
@@ -61,6 +63,7 @@ interface CommandCenterProps {
   onExportDeck: () => void;
   onViewAnalytics: () => void;
   onCompanyChange?: (companyKey: string) => void;
+  onCompanyDelete?: () => void; // New callback for company deletion
   selectedCompany?: string;
   // New cross-section navigation functions
   onNavigateToPhase?: (phaseNumber: number) => void;
@@ -97,6 +100,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onExportDeck,
   onViewAnalytics,
   onCompanyChange,
+  onCompanyDelete,
   selectedCompany = "mastec",
   onNavigateToPhase,
   onViewPhaseAnalytics,
@@ -105,6 +109,70 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 }) => {
   // Help modal state
   const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Delete dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    company: any | null;
+    deleting: boolean;
+  }>({ open: false, company: null, deleting: false });
+
+  // Delete company function
+  const deleteCompany = async (company: any) => {
+    try {
+      console.log("🗑️ Starting delete process for company:", company);
+
+      // Use company.value since we're passing companyOptions objects
+      const companyId = company.value || company.id;
+      console.log("🎯 Deleting company with ID:", companyId);
+
+      if (!company || !companyId) {
+        console.error("❌ Cannot delete: Invalid company or missing ID");
+        throw new Error("Invalid company data");
+      }
+
+      setDeleteDialog(prev => ({ ...prev, deleting: true }));
+
+      const response = await fetch(`/api/companies/${companyId}`, {
+        method: "DELETE",
+      });
+
+      console.log("📡 Delete API response:", response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error("Failed to delete company");
+      }
+
+      // Close dialog
+      setDeleteDialog({ open: false, company: null, deleting: false });
+
+      // Show success message
+      showToast(`Company "${company.label || company.clientName}" deleted successfully`, "success");
+
+      // Notify parent to refresh data
+      if (onCompanyChange) {
+        // Select a different company if the deleted one was selected
+        const validCompanies = Array.isArray(companies) ? companies : [];
+        if (selectedCompany === companyId && validCompanies.length > 1) {
+          const remainingCompanies = validCompanies.filter(c => c.id !== companyId);
+          if (remainingCompanies.length > 0) {
+            onCompanyChange(remainingCompanies[0].id);
+          }
+        }
+      }
+
+      if (onCompanyDelete) {
+        onCompanyDelete();
+      }
+
+      console.log("✅ Company deleted successfully");
+    } catch (error) {
+      console.error("❌ Error deleting company:", error);
+      showToast("Failed to delete company. Please try again.", "warning");
+    } finally {
+      setDeleteDialog(prev => ({ ...prev, deleting: false }));
+    }
+  };
 
   // Expose help modal functionality to parent
   React.useEffect(() => {
@@ -171,8 +239,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
   // **CRITICAL FIX**: Use real companies from database instead of demo data
   const companyOptions: CompanyOption[] = useMemo(() => {
-    if (companies && companies.length > 0) {
-      return companies.map(company => ({
+    // Ensure companies is an array before processing
+    const validCompanies = Array.isArray(companies) ? companies : [];
+
+    if (validCompanies.length > 0) {
+      return validCompanies.map(company => ({
         value: company.id,
         label: company.clientName,
         industry: company.industry,
@@ -295,6 +366,29 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   )}
                 </SelectContent>
               </Select>
+
+              {/* Delete Company Button */}
+              {companyOptions.length > 0 && selectedCompany && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    console.log("🗑️ Delete button clicked, selectedCompany:", selectedCompany);
+                    console.log("🏢 Available companyOptions:", companyOptions);
+                    const currentCompany = companyOptions.find(c => c.value === selectedCompany);
+                    console.log("🎯 Found currentCompany:", currentCompany);
+                    if (currentCompany) {
+                      setDeleteDialog({ open: true, company: currentCompany, deleting: false });
+                    } else {
+                      console.error("❌ No company found for selectedCompany:", selectedCompany);
+                    }
+                  }}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  aria-label="Delete selected company"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
 
               {/* Debug info for companies */}
               <div className="text-xs text-gray-500">
@@ -701,7 +795,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         <div className="p-6">
           {/* Enhanced Phase Grid with Real Phase Data */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-            {workflowPhases.map(phase => {
+            {workflowPhases.map((phase, index) => {
               const isCurrentPhase = realProgressData.currentPhase === phase.id;
               const isCompleted = phase.status === "completed";
               const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
@@ -722,15 +816,14 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                     console.log("Phase data:", phase);
                     if (onNavigateToPhase) {
                       onNavigateToPhase(phase.id);
-                      showToast(`Navigating to Phase ${phase.id}: ${phase.title}`, "success");
+                      showToast(`Navigating to Phase ${phase.phaseNumber || index + 1}: ${phase.title}`, "success");
                     } else {
-                      console.warn("⚠️ onNavigateToPhase not available");
-                      showToast("Navigation not available", "warning");
+                      console.warn("❌ onNavigateToPhase not provided");
                     }
                   }}
                 >
-                  {/* Phase Status Icon */}
-                  <div className="flex items-center justify-center mb-2">
+                  {/* Phase Icon */}
+                  <div className="flex flex-col items-center space-y-2">
                     <div
                       className={`
                       w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold
@@ -739,7 +832,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                       ${isPending ? "bg-gray-100 text-gray-600" : ""}
                     `}
                     >
-                      {isCompleted ? <CheckCircle className="h-6 w-6" /> : isInProgress ? <Activity className="h-6 w-6" /> : phase.id}
+                      {isCompleted ? <CheckCircle className="h-6 w-6" /> : isInProgress ? <Activity className="h-6 w-6" /> : phase.phaseNumber || index + 1}
                     </div>
                   </div>
 
@@ -1203,6 +1296,42 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               Start New Project
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Company Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={open => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Company Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteDialog.company?.label}"? This action cannot be undone and will remove all associated data, including:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>All workflow phases and progress</li>
+                <li>AI insights and recommendations</li>
+                <li>Analytics data and reports</li>
+                <li>Chat history and sessions</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(prev => ({ ...prev, open: false }))} disabled={deleteDialog.deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => deleteDialog.company && deleteCompany(deleteDialog.company)} disabled={deleteDialog.deleting}>
+              {deleteDialog.deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Company
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

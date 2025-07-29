@@ -394,7 +394,7 @@ const TransformationXPLR: React.FC = () => {
       addNotification(`✅ Company "${data.companyName}" created successfully! Now generating AI analysis...`, "success");
 
       // Update companies list immediately
-      const updatedCompanies = [...companies, newCompany];
+      const updatedCompanies = [...(Array.isArray(companies) ? companies : []), newCompany];
       setCompanies(updatedCompanies);
       setSelectedCompany(newCompany.id);
 
@@ -496,7 +496,9 @@ const TransformationXPLR: React.FC = () => {
       console.log("✅ Company updated successfully:", updatedCompany);
 
       // Update state with the enhanced company
-      const updatedCompanies = companies.map(c => (c.id === companyId ? updatedCompany : c));
+      const updatedCompanies = Array.isArray(companies) 
+        ? companies.map(c => (c.id === companyId ? updatedCompany : c))
+        : [updatedCompany];
       setCompanies(updatedCompanies);
 
       console.log("📈 Loading enhanced company data for dashboard...");
@@ -558,7 +560,9 @@ const TransformationXPLR: React.FC = () => {
 
   // Handle company selection change
   const handleCompanyChange = async (companyId: string) => {
-    const company = companies.find(c => c.id === companyId);
+    const company = Array.isArray(companies) 
+      ? companies.find(c => c.id === companyId)
+      : null;
     if (company) {
       setSelectedCompany(companyId);
       await loadCompanyData(company);
@@ -807,6 +811,33 @@ const TransformationXPLR: React.FC = () => {
                   onExportDeck={handleExportDeck}
                   onViewAnalytics={handleViewAnalytics}
                   onCompanyChange={handleCompanyChange}
+                  onCompanyDelete={async () => {
+                    // Refresh companies data after deletion
+                    try {
+                      console.log("🔄 Refreshing companies after deletion...");
+                      const response = await fetch("/api/companies");
+                      if (response.ok) {
+                        const data = await safeResponseJson(response);
+                        const userCompanies = data.companies || [];
+                        setCompanies(userCompanies);
+                        
+                        // If no companies left, clear selected company
+                        if (userCompanies.length === 0) {
+                          setSelectedCompany("");
+                          setCurrentProject(null);
+                        } else if (!userCompanies.find((c: any) => c.id === selectedCompany)) {
+                          // If current selected company was deleted, select first available
+                          setSelectedCompany(userCompanies[0].id);
+                          await loadCompanyData(userCompanies[0]);
+                        }
+                        
+                        addNotification("Company deleted successfully", "success");
+                      }
+                    } catch (error) {
+                      console.error("❌ Error refreshing companies:", error);
+                      addNotification("Company deleted but failed to refresh list", "warning");
+                    }
+                  }}
                   onNavigateToPhase={handleNavigateToPhase}
                   onViewPhaseAnalytics={handleViewPhaseAnalytics}
                   onAccessHackettIP={handleAccessHackettIP}

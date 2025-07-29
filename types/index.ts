@@ -43,6 +43,7 @@ export interface AIInsight {
 // Workflow phase management
 export interface WorkflowPhase {
   id: number;
+  phaseNumber: number;
   title: string;
   description: string;
   status: "completed" | "in-progress" | "pending" | "ai-enhanced";

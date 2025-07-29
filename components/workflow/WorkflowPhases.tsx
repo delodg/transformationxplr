@@ -980,7 +980,7 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                             ${phase.status === "ai-enhanced" ? "bg-gradient-to-br from-purple-500 to-violet-600" : ""}
                           `}
                               >
-                                {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : <span className="text-lg">{phase.id}</span>}
+                                {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : <span className="text-lg">{phase.phaseNumber || index + 1}</span>}
                               </div>
 
                               {/* Phase Information */}
@@ -1038,7 +1038,7 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                               <div className="flex items-center space-x-2 text-xs text-gray-600">
                                 <Target className="h-3 w-3" />
-                                <span>Phase {phase.id} Integration</span>
+                                <span>Phase {phase.phaseNumber || index + 1} Integration</span>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Button
@@ -1059,7 +1059,7 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                                   className="h-7 px-2 text-xs"
                                   onClick={e => {
                                     e.stopPropagation();
-                                    onAccessHackettIP?.(`Phase ${phase.id} Resources`);
+                                    onAccessHackettIP?.(`Phase ${phase.phaseNumber || index + 1} Resources`);
                                   }}
                                 >
                                   <Database className="h-3 w-3 mr-1" />
@@ -1094,10 +1094,10 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                         ${selectedPhase.status === "pending" ? "bg-gradient-to-br from-gray-400 to-slate-500" : ""}
                       `}
                       >
-                        {selectedPhase.status === "completed" ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-sm">{selectedPhase.id}</span>}
+                        {selectedPhase.status === "completed" ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-sm">{selectedPhase.phaseNumber || 1}</span>}
                       </div>
                       <span>
-                        Phase {selectedPhase.id}: {selectedPhase.title}
+                        Phase {selectedPhase.phaseNumber || 1}: {selectedPhase.title}
                       </span>
                     </CardTitle>
                     <CardDescription className="mt-2">{selectedPhase.description}</CardDescription>

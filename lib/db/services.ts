@@ -1,5 +1,21 @@
-import { db, companies, chatMessages, aiInsights, workflowPhases, questionnaires, analysisResults, userSessions, users } from "./index";
-import { eq, and, desc, asc, isNull } from "drizzle-orm";
+import {
+  db,
+  companies,
+  chatMessages,
+  aiInsights,
+  workflowPhases,
+  questionnaires,
+  analysisResults,
+  userSessions,
+  users,
+  analyticsSnapshots,
+  dashboardExports,
+  performanceMetrics,
+  dashboardPreferences,
+  chartConfigurations,
+  dashboardViews,
+} from "./index";
+import { eq, and, desc, asc, isNull, gte, lte, between } from "drizzle-orm";
 import type {
   NewCompany,
   Company,
@@ -13,7 +29,20 @@ import type {
   NewAnalysisResult,
   NewUserSession,
   NewUser,
+  NewAnalyticsSnapshot,
+  AnalyticsSnapshot,
+  NewDashboardExport,
+  DashboardExport,
+  NewPerformanceMetric,
+  PerformanceMetric,
+  NewDashboardPreference,
+  DashboardPreference,
+  NewChartConfiguration,
+  ChartConfiguration,
+  NewDashboardView,
+  DashboardView,
 } from "./schema";
+import { sql } from "drizzle-orm";
 
 // ===============================
 // USER SERVICES
@@ -242,6 +271,361 @@ export async function getUserActiveSessions(userId: string): Promise<any[]> {
     .from(userSessions)
     .where(and(eq(userSessions.userId, userId), isNull(userSessions.endedAt)))
     .orderBy(desc(userSessions.lastActivity));
+}
+
+// ===============================
+// ANALYTICS SNAPSHOTS SERVICES
+// ===============================
+
+export async function createAnalyticsSnapshot(snapshot: NewAnalyticsSnapshot): Promise<AnalyticsSnapshot> {
+  const [newSnapshot] = await db.insert(analyticsSnapshots).values(snapshot).returning();
+  return newSnapshot;
+}
+
+export async function getAnalyticsSnapshotsByCompany(companyId: string): Promise<AnalyticsSnapshot[]> {
+  return await db.select().from(analyticsSnapshots).where(eq(analyticsSnapshots.companyId, companyId)).orderBy(desc(analyticsSnapshots.createdAt));
+}
+
+export async function getAnalyticsSnapshotsInDateRange(companyId: string, startDate: Date, endDate: Date): Promise<AnalyticsSnapshot[]> {
+  return await db
+    .select()
+    .from(analyticsSnapshots)
+    .where(and(eq(analyticsSnapshots.companyId, companyId), between(analyticsSnapshots.createdAt, startDate, endDate)))
+    .orderBy(asc(analyticsSnapshots.createdAt));
+}
+
+export async function getLatestAnalyticsSnapshot(companyId: string): Promise<AnalyticsSnapshot | null> {
+  const [snapshot] = await db.select().from(analyticsSnapshots).where(eq(analyticsSnapshots.companyId, companyId)).orderBy(desc(analyticsSnapshots.createdAt)).limit(1);
+  return snapshot || null;
+}
+
+export async function deleteAnalyticsSnapshot(snapshotId: string): Promise<void> {
+  await db.delete(analyticsSnapshots).where(eq(analyticsSnapshots.id, snapshotId));
+}
+
+// ===============================
+// DASHBOARD EXPORTS SERVICES
+// ===============================
+
+export async function createDashboardExport(exportData: NewDashboardExport): Promise<DashboardExport> {
+  const [newExport] = await db.insert(dashboardExports).values(exportData).returning();
+  return newExport;
+}
+
+export async function getDashboardExportsByUser(userId: string): Promise<DashboardExport[]> {
+  return await db.select().from(dashboardExports).where(eq(dashboardExports.userId, userId)).orderBy(desc(dashboardExports.createdAt));
+}
+
+export async function getDashboardExportsByCompany(companyId: string): Promise<DashboardExport[]> {
+  return await db.select().from(dashboardExports).where(eq(dashboardExports.companyId, companyId)).orderBy(desc(dashboardExports.createdAt));
+}
+
+export async function getDashboardExportById(exportId: string): Promise<DashboardExport | null> {
+  const [exportData] = await db.select().from(dashboardExports).where(eq(dashboardExports.id, exportId)).limit(1);
+  return exportData || null;
+}
+
+export async function updateDashboardExport(exportId: string, updates: Partial<NewDashboardExport>): Promise<DashboardExport> {
+  const [updatedExport] = await db.update(dashboardExports).set(updates).where(eq(dashboardExports.id, exportId)).returning();
+  return updatedExport;
+}
+
+export async function incrementExportDownloadCount(exportId: string): Promise<DashboardExport> {
+  const [updatedExport] = await db
+    .update(dashboardExports)
+    .set({
+      downloadCount: sql`${dashboardExports.downloadCount} + 1`,
+      lastDownloaded: new Date(),
+    })
+    .where(eq(dashboardExports.id, exportId))
+    .returning();
+  return updatedExport;
+}
+
+export async function deleteDashboardExport(exportId: string): Promise<void> {
+  await db.delete(dashboardExports).where(eq(dashboardExports.id, exportId));
+}
+
+// ===============================
+// PERFORMANCE METRICS SERVICES
+// ===============================
+
+export async function createPerformanceMetric(metric: NewPerformanceMetric): Promise<PerformanceMetric> {
+  const [newMetric] = await db.insert(performanceMetrics).values(metric).returning();
+  return newMetric;
+}
+
+export async function getPerformanceMetricsByCompany(companyId: string): Promise<PerformanceMetric[]> {
+  return await db.select().from(performanceMetrics).where(eq(performanceMetrics.companyId, companyId)).orderBy(desc(performanceMetrics.createdAt));
+}
+
+export async function getPerformanceMetricsByType(companyId: string, metricType: string): Promise<PerformanceMetric[]> {
+  return await db
+    .select()
+    .from(performanceMetrics)
+    .where(and(eq(performanceMetrics.companyId, companyId), eq(performanceMetrics.metricType, metricType)))
+    .orderBy(desc(performanceMetrics.periodEnd));
+}
+
+export async function getPerformanceMetricsInPeriod(companyId: string, startDate: Date, endDate: Date): Promise<PerformanceMetric[]> {
+  return await db
+    .select()
+    .from(performanceMetrics)
+    .where(and(eq(performanceMetrics.companyId, companyId), between(performanceMetrics.periodStart, startDate, endDate)))
+    .orderBy(asc(performanceMetrics.periodStart));
+}
+
+export async function updatePerformanceMetric(metricId: string, updates: Partial<NewPerformanceMetric>): Promise<PerformanceMetric> {
+  const [updatedMetric] = await db.update(performanceMetrics).set(updates).where(eq(performanceMetrics.id, metricId)).returning();
+  return updatedMetric;
+}
+
+export async function deletePerformanceMetric(metricId: string): Promise<void> {
+  await db.delete(performanceMetrics).where(eq(performanceMetrics.id, metricId));
+}
+
+// ===============================
+// DASHBOARD PREFERENCES SERVICES
+// ===============================
+
+export async function createDashboardPreference(preference: NewDashboardPreference): Promise<DashboardPreference> {
+  const [newPreference] = await db.insert(dashboardPreferences).values(preference).returning();
+  return newPreference;
+}
+
+export async function getDashboardPreferencesByUser(userId: string): Promise<DashboardPreference[]> {
+  return await db.select().from(dashboardPreferences).where(eq(dashboardPreferences.userId, userId)).orderBy(desc(dashboardPreferences.updatedAt));
+}
+
+export async function getDashboardPreference(userId: string, preferenceType: string, preferenceName: string, companyId?: string): Promise<DashboardPreference | null> {
+  const conditions = [eq(dashboardPreferences.userId, userId), eq(dashboardPreferences.preferenceType, preferenceType), eq(dashboardPreferences.preferenceName, preferenceName)];
+
+  if (companyId) {
+    conditions.push(eq(dashboardPreferences.companyId, companyId));
+  } else {
+    conditions.push(isNull(dashboardPreferences.companyId));
+  }
+
+  const [preference] = await db
+    .select()
+    .from(dashboardPreferences)
+    .where(and(...conditions))
+    .limit(1);
+  return preference || null;
+}
+
+export async function upsertDashboardPreference(preference: NewDashboardPreference): Promise<DashboardPreference> {
+  const existing = await getDashboardPreference(preference.userId, preference.preferenceType, preference.preferenceName, preference.companyId || undefined);
+
+  if (existing) {
+    const [updated] = await db
+      .update(dashboardPreferences)
+      .set({
+        preferenceValue: preference.preferenceValue,
+        updatedAt: new Date(),
+      })
+      .where(eq(dashboardPreferences.id, existing.id))
+      .returning();
+    return updated;
+  } else {
+    return await createDashboardPreference(preference);
+  }
+}
+
+export async function deleteDashboardPreference(preferenceId: string): Promise<void> {
+  await db.delete(dashboardPreferences).where(eq(dashboardPreferences.id, preferenceId));
+}
+
+// ===============================
+// CHART CONFIGURATIONS SERVICES
+// ===============================
+
+export async function createChartConfiguration(config: NewChartConfiguration): Promise<ChartConfiguration> {
+  const [newConfig] = await db.insert(chartConfigurations).values(config).returning();
+  return newConfig;
+}
+
+export async function getChartConfigurationsByUser(userId: string): Promise<ChartConfiguration[]> {
+  return await db.select().from(chartConfigurations).where(eq(chartConfigurations.userId, userId)).orderBy(desc(chartConfigurations.lastUsed));
+}
+
+export async function getChartConfigurationsByType(userId: string, chartType: string): Promise<ChartConfiguration[]> {
+  return await db
+    .select()
+    .from(chartConfigurations)
+    .where(and(eq(chartConfigurations.userId, userId), eq(chartConfigurations.chartType, chartType)))
+    .orderBy(desc(chartConfigurations.useCount));
+}
+
+export async function getChartConfiguration(userId: string, chartName: string, companyId?: string): Promise<ChartConfiguration | null> {
+  const conditions = [eq(chartConfigurations.userId, userId), eq(chartConfigurations.chartName, chartName)];
+
+  if (companyId) {
+    conditions.push(eq(chartConfigurations.companyId, companyId));
+  }
+
+  const [config] = await db
+    .select()
+    .from(chartConfigurations)
+    .where(and(...conditions))
+    .limit(1);
+  return config || null;
+}
+
+export async function updateChartConfiguration(configId: string, updates: Partial<NewChartConfiguration>): Promise<ChartConfiguration> {
+  const [updatedConfig] = await db
+    .update(chartConfigurations)
+    .set({
+      ...updates,
+      updatedAt: new Date(),
+    })
+    .where(eq(chartConfigurations.id, configId))
+    .returning();
+  return updatedConfig;
+}
+
+export async function incrementChartConfigUseCount(configId: string): Promise<ChartConfiguration> {
+  const [updatedConfig] = await db
+    .update(chartConfigurations)
+    .set({
+      useCount: sql`${chartConfigurations.useCount} + 1`,
+      lastUsed: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(chartConfigurations.id, configId))
+    .returning();
+  return updatedConfig;
+}
+
+export async function deleteChartConfiguration(configId: string): Promise<void> {
+  await db.delete(chartConfigurations).where(eq(chartConfigurations.id, configId));
+}
+
+// ===============================
+// DASHBOARD VIEWS SERVICES
+// ===============================
+
+export async function createDashboardView(view: NewDashboardView): Promise<DashboardView> {
+  const [newView] = await db.insert(dashboardViews).values(view).returning();
+  return newView;
+}
+
+export async function getDashboardViewsByUser(userId: string): Promise<DashboardView[]> {
+  return await db.select().from(dashboardViews).where(eq(dashboardViews.userId, userId)).orderBy(desc(dashboardViews.createdAt));
+}
+
+export async function getDashboardViewsByCompany(companyId: string): Promise<DashboardView[]> {
+  return await db.select().from(dashboardViews).where(eq(dashboardViews.companyId, companyId)).orderBy(desc(dashboardViews.createdAt));
+}
+
+export async function getDashboardViewsAnalytics(userId: string, startDate: Date, endDate: Date): Promise<DashboardView[]> {
+  return await db
+    .select()
+    .from(dashboardViews)
+    .where(and(eq(dashboardViews.userId, userId), between(dashboardViews.createdAt, startDate, endDate)))
+    .orderBy(desc(dashboardViews.createdAt));
+}
+
+export async function updateDashboardView(viewId: string, updates: Partial<NewDashboardView>): Promise<DashboardView> {
+  const [updatedView] = await db.update(dashboardViews).set(updates).where(eq(dashboardViews.id, viewId)).returning();
+  return updatedView;
+}
+
+export async function deleteDashboardView(viewId: string): Promise<void> {
+  await db.delete(dashboardViews).where(eq(dashboardViews.id, viewId));
+}
+
+// ===============================
+// ANALYTICS HELPER FUNCTIONS
+// ===============================
+
+export async function generateAnalyticsSnapshot(companyId: string): Promise<AnalyticsSnapshot> {
+  // Get current company data
+  const company = await getCompanyById(companyId);
+  if (!company) throw new Error("Company not found");
+
+  // Get insights breakdown
+  const insights = await getAIInsightsByCompany(companyId);
+  const phases = await getWorkflowPhasesByCompany(companyId);
+
+  const insightCounts = insights.reduce((acc, insight) => {
+    acc[insight.type] = (acc[insight.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Calculate performance scores
+  const completedPhases = phases.filter(p => p.status === "completed").length;
+  const velocityScore = completedPhases > 0 ? (completedPhases / phases.length) * 100 : 0;
+  const qualityScore = insights.length > 0 ? (insights.reduce((sum, i) => sum + (i.confidence || 0), 0) / insights.length) * 100 : 0;
+  const riskScore = Math.max(0, 100 - (insightCounts.risk || 0) * 10);
+
+  const snapshotData: NewAnalyticsSnapshot = {
+    id: generateId(),
+    companyId,
+    snapshotType: "daily",
+    progress: company.progress,
+    aiAcceleration: company.aiAcceleration,
+    completedPhases,
+    totalPhases: phases.length,
+    totalInsights: insights.length,
+    riskCount: insightCounts.risk || 0,
+    opportunityCount: insightCounts.opportunity || 0,
+    recommendationCount: insightCounts.recommendation || 0,
+    automationCount: insightCounts.automation || 0,
+    projectValue: company.projectValue,
+    teamSize: parseJSONField(company.teamMembers, []).length,
+    velocityScore,
+    qualityScore,
+    riskScore,
+    customMetrics: JSON.stringify({}),
+    notes: null,
+  };
+
+  return await createAnalyticsSnapshot(snapshotData);
+}
+
+export async function getAnalyticsTrends(
+  companyId: string,
+  days: number = 30
+): Promise<{
+  snapshots: AnalyticsSnapshot[];
+  trends: {
+    progress: "improving" | "declining" | "stable";
+    velocity: "improving" | "declining" | "stable";
+    quality: "improving" | "declining" | "stable";
+    risk: "improving" | "declining" | "stable";
+  };
+}> {
+  const endDate = new Date();
+  const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const snapshots = await getAnalyticsSnapshotsInDateRange(companyId, startDate, endDate);
+
+  if (snapshots.length < 2) {
+    return {
+      snapshots,
+      trends: { progress: "stable", velocity: "stable", quality: "stable", risk: "stable" },
+    };
+  }
+
+  const first = snapshots[0];
+  const last = snapshots[snapshots.length - 1];
+
+  const calculateTrend = (startValue: number, endValue: number): "improving" | "declining" | "stable" => {
+    const diff = endValue - startValue;
+    if (Math.abs(diff) < 5) return "stable";
+    return diff > 0 ? "improving" : "declining";
+  };
+
+  return {
+    snapshots,
+    trends: {
+      progress: calculateTrend(first.progress, last.progress),
+      velocity: calculateTrend(first.velocityScore || 0, last.velocityScore || 0),
+      quality: calculateTrend(first.qualityScore || 0, last.qualityScore || 0),
+      risk: calculateTrend(first.riskScore || 0, last.riskScore || 0),
+    },
+  };
 }
 
 // ===============================
