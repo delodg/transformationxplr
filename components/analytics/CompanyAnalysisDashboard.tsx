@@ -78,16 +78,21 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
 
       const data = await response.json();
       console.log("📊 Raw API response:", data);
+      console.log("🔍 Companies array type:", typeof data.companies, "length:", data.companies?.length);
+      console.log("🔍 Sample company data:", data.companies?.[0]);
 
       setDebugInfo({
         responseStatus: response.status,
         rawData: data,
         companiesCount: data.companies?.length || 0,
         timestamp: new Date().toISOString(),
+        companiesArray: data.companies || [],
+        sampleCompany: data.companies?.[0] || null,
       });
 
       if (!data.companies || !Array.isArray(data.companies)) {
         console.warn("⚠️ API response missing companies array:", data);
+        console.warn("⚠️ Expected format: { companies: [...] }");
         setCompanies([]);
         return;
       }
@@ -117,11 +122,17 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
       }));
 
       console.log("✅ Formatted companies:", formattedCompanies.length, "companies");
+      console.log(
+        "🏢 Company names:",
+        formattedCompanies.map((c: TransformationProject) => c.clientName)
+      );
       setCompanies(formattedCompanies);
 
       // If no companies, provide helpful guidance
       if (formattedCompanies.length === 0) {
         console.log("ℹ️ No companies found for this user - they may need to create their first company");
+      } else {
+        console.log("🎉 Companies loaded successfully into state!");
       }
     } catch (error) {
       console.error("❌ Error fetching companies:", error);
@@ -154,11 +165,38 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
       console.log("🧠 AI Insights found:", data.insights?.length || 0);
       console.log("🔄 Workflow Phases found:", data.phases?.length || 0);
 
+      // **SAFE JSON PARSING HELPER**
+      const safeJsonParse = (jsonString: string, fallback: any[] = []) => {
+        try {
+          return typeof jsonString === "string" ? JSON.parse(jsonString || "[]") : jsonString || fallback;
+        } catch (error) {
+          console.warn("⚠️ JSON parse error:", error, "Input:", jsonString);
+          return fallback;
+        }
+      };
+
       // **CRITICAL FIX**: Ensure insights and phases are properly mapped
       const companyWithInsights: CompanyWithInsights = {
         ...company,
-        insights: data.insights || [],
-        phases: data.phases || [],
+        insights: (data.insights || []).map((insight: any) => ({
+          ...insight,
+          // **FIX**: Parse JSON fields that come as strings from database
+          dependencies: safeJsonParse(insight.dependencies, []),
+          recommendations: safeJsonParse(insight.recommendations, []),
+        })),
+        phases: (data.phases || []).map((phase: any) => ({
+          ...phase,
+          // **FIX**: Parse JSON fields that come as strings from database
+          deliverables: safeJsonParse(phase.deliverables, []),
+          keyActivities: safeJsonParse(phase.keyActivities, []),
+          hackettIP: safeJsonParse(phase.hackettIP, []),
+          aiSuggestions: safeJsonParse(phase.aiSuggestions, []),
+          dependencies: safeJsonParse(phase.dependencies, []),
+          teamRole: safeJsonParse(phase.teamRole, []),
+          clientTasks: safeJsonParse(phase.clientTasks, []),
+          riskFactors: safeJsonParse(phase.riskFactors, []),
+          successMetrics: safeJsonParse(phase.successMetrics, []),
+        })),
       };
 
       console.log("✅ Company selected with", data.insights?.length || 0, "insights and", data.phases?.length || 0, "phases");
@@ -342,61 +380,23 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Company Analysis Dashboard</h1>
           <p className="text-gray-600 mt-1">Select a company to view their transformation scorecard and insights</p>
-          {debugInfo && <p className="text-xs text-gray-500 mt-1">Last updated: {new Date(debugInfo.timestamp).toLocaleTimeString()}</p>}
         </div>
         <div className="flex items-center gap-3">
           {selectedCompany && (
-            <>
-              <Button onClick={regenerateAIAnalysis} disabled={regenerating} variant="outline" className="flex-1">
-                {regenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Regenerating...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Regenerate AI Analysis
-                  </>
-                )}
-              </Button>
-
-              {/* Debug button for AI flow testing */}
-              <Button
-                onClick={async () => {
-                  try {
-                    console.log("🐛 Testing AI data flow...");
-                    const response = await fetch("/api/debug-ai-flow", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                    });
-                    const debug = await response.json();
-                    console.log("🐛 Debug results:", debug);
-                    alert(
-                      `Debug Complete! Check console for details.\n\nSummary:\n- Companies: ${debug.data?.totalCompanies || 0}\n- Total Insights: ${
-                        debug.data?.summary?.totalInsights || 0
-                      }\n- Total Phases: ${debug.data?.summary?.totalPhases || 0}`
-                    );
-                  } catch (error) {
-                    console.error("🐛 Debug failed:", error);
-                    alert("Debug failed - check console for details");
-                  }
-                }}
-                variant="outline"
-                className="flex-1"
-              >
-                <Activity className="h-4 w-4 mr-2" />
-                Debug AI Flow
-              </Button>
-            </>
+            <Button onClick={regenerateAIAnalysis} disabled={regenerating} variant="outline">
+              {regenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Regenerating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Regenerate AI Analysis
+                </>
+              )}
+            </Button>
           )}
-          <Badge variant="outline" className="text-sm">
-            {companies.length} companies
-          </Badge>
-          <Button onClick={fetchCompanies} variant="ghost" size="sm" className="text-xs">
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -417,11 +417,11 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
                   <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="font-medium text-gray-900 mb-2">No Companies Found</h3>
                   <p className="text-gray-600 text-sm mb-4">You haven't created any companies yet. Get started by adding your first company.</p>
+
                   <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="mb-2">
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Check Again
+                    Refresh
                   </Button>
-                  <p className="text-xs text-gray-500">If you just created a company, try refreshing this page.</p>
                 </div>
               ) : (
                 companies.map(company => (
@@ -699,21 +699,16 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
                       <Lightbulb className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No AI Insights Generated</h3>
                       <p className="text-gray-600 mb-4">AI insights will appear here after analysis is generated for this company.</p>
-                      <div className="text-sm text-gray-500 mb-4">
-                        <p>Company: {selectedCompany.clientName}</p>
-                        <p>Status: {selectedCompany.status}</p>
-                        <p>Progress: {selectedCompany.progress}%</p>
-                      </div>
-                      <Button onClick={regenerateAIAnalysis} disabled={regenerating} className="mt-4">
+                      <Button onClick={regenerateAIAnalysis} disabled={regenerating} className="bg-blue-600 hover:bg-blue-700 text-white">
                         {regenerating ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generating AI Analysis...
+                            Generating...
                           </>
                         ) : (
                           <>
                             <Brain className="h-4 w-4 mr-2" />
-                            Generate AI Analysis
+                            Generate AI Insights
                           </>
                         )}
                       </Button>

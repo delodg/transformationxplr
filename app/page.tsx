@@ -29,30 +29,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 const TransformationXPLR: React.FC = () => {
   const { user, isLoaded } = useUser();
 
-  // Show loading state while Clerk is initializing to prevent hydration issues
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading Transformation XPLR...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Ensure user is authenticated before proceeding
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
-          <p className="text-gray-600">Please sign in to access your transformation platform.</p>
-        </div>
-      </div>
-    );
-  }
-
+  // **CRITICAL FIX**: Move ALL hooks to the top, before any conditional returns
   // Core application state - now database-driven
   const [activeTab, setActiveTab] = useState("command-center");
   const [selectedCompany, setSelectedCompany] = useState<string>("");
@@ -71,17 +48,13 @@ const TransformationXPLR: React.FC = () => {
   const [notifications, setNotifications] = useState<{ id: string; message: string; type: "success" | "info" | "warning" | "error"; timestamp: string }[]>([]);
   const [dashboardRefresh, setDashboardRefresh] = useState(0); // Add refresh trigger for dashboard
 
-  // Utility function to generate unique IDs
-  const generateId = () => {
-    return Math.random().toString(36).substr(2, 9);
-  };
-
   // Guided tour state
   const [showGuidedTour, setShowGuidedTour] = useState(false);
   const [tourType, setTourType] = useState<"onboarding" | "phase-specific" | "full-workflow" | "ai-assistant">("full-workflow");
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // **CRITICAL FIX**: Move ALL useEffect hooks to the top as well
   // Load user's companies and data
   useEffect(() => {
     if (user && isLoaded) {
@@ -99,7 +72,13 @@ const TransformationXPLR: React.FC = () => {
         localStorage.setItem(`transformation-xplr-visited-${user.id}`, "true");
       }
     }
-  }, [user?.id, companies.length, isLoaded]);
+  }, [user, isLoaded, companies]);
+
+  // **CRITICAL FIX**: Define all functions after hooks but before conditional returns
+  // Utility function to generate unique IDs
+  const generateId = () => {
+    return Math.random().toString(36).substr(2, 9);
+  };
 
   const loadUserData = async () => {
     try {
@@ -482,6 +461,18 @@ const TransformationXPLR: React.FC = () => {
     setShowGuidedTour(false);
   };
 
+  // Show loading state while Clerk is initializing to prevent hydration issues
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Transformation XPLR...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show loading state
   if (isLoading) {
     return (
@@ -494,6 +485,18 @@ const TransformationXPLR: React.FC = () => {
     );
   }
 
+  // Ensure user is authenticated before proceeding
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600">Please sign in to access your transformation platform.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show empty state if no companies
   if (companies.length === 0) {
     return (
@@ -501,14 +504,14 @@ const TransformationXPLR: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <Brain className="h-16 w-16 text-blue-600 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Transformation XPLR</h1>
-            <p className="text-xl text-gray-600 mb-8">AI-Powered Finance Transformation Platform</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Get Started with Your First Project</h1>
+            <p className="text-xl text-gray-600 mb-8">AI-Powered Finance Transformation Analysis</p>
             <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-              Get started by adding your first company. Our AI will analyze your business and generate a comprehensive 7-phase transformation roadmap with actionable insights.
+              Create your first company profile to unlock powerful AI insights and a comprehensive 7-phase transformation roadmap tailored to your business needs.
             </p>
             <Button onClick={handleNewProject} size="lg" className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-5 w-5 mr-2" />
-              Add Your First Company
+              Create Your First Company
             </Button>
           </div>
         </div>
@@ -570,49 +573,57 @@ const TransformationXPLR: React.FC = () => {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Streamlined Header */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Transformation XPLR</h1>
-            <p className="text-gray-600">AI-Powered Finance Transformation Platform</p>
-            <p className="text-sm text-blue-600">Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}</p>
+            <p className="text-2xl font-semibold text-gray-800">Welcome back, {user.firstName || user.emailAddresses[0]?.emailAddress.split("@")[0]}</p>
+            <p className="text-gray-600 mt-1">Manage your transformation projects and track progress</p>
           </div>
-          <div className="flex items-center space-x-4">
-            {/* Guided Tour Controls */}
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={() => handleStartTour("ai-assistant")}>
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Help
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleStartTour("full-workflow")}>
-                <Users className="h-4 w-4 mr-2" />
-                Start Full Workflow Tour
-              </Button>
-              <Button onClick={handleNewProject} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Company
-              </Button>
-            </div>
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" size="sm" onClick={() => handleStartTour("ai-assistant")}>
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Help
+            </Button>
+            <Button onClick={handleNewProject} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Company
+            </Button>
           </div>
         </div>
 
         {/* Main Content */}
         {currentProject && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="Main navigation tabs">
-              <TabsTrigger value="command-center" className="flex items-center space-x-2" role="tab">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+            <TabsList className="grid w-full grid-cols-4 h-12 bg-white border border-gray-200 rounded-lg p-1" role="tablist" aria-label="Main navigation tabs">
+              <TabsTrigger
+                value="command-center"
+                className="flex items-center space-x-2 h-10 text-sm font-medium data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all"
+                role="tab"
+              >
                 <Target className="h-4 w-4" />
                 <span>Command Center</span>
               </TabsTrigger>
-              <TabsTrigger value="workflow" className="flex items-center space-x-2" role="tab">
+              <TabsTrigger
+                value="workflow"
+                className="flex items-center space-x-2 h-10 text-sm font-medium data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all"
+                role="tab"
+              >
                 <Workflow className="h-4 w-4" />
                 <span>7-Phase Workflow</span>
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center space-x-2" role="tab">
+              <TabsTrigger
+                value="analytics"
+                className="flex items-center space-x-2 h-10 text-sm font-medium data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all"
+                role="tab"
+              >
                 <BarChart3 className="h-4 w-4" />
                 <span>Analytics</span>
               </TabsTrigger>
-              <TabsTrigger value="hackett-ip" className="flex items-center space-x-2" role="tab">
+              <TabsTrigger
+                value="hackett-ip"
+                className="flex items-center space-x-2 h-10 text-sm font-medium data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all"
+                role="tab"
+              >
                 <Database className="h-4 w-4" />
                 <span>Hackett IP</span>
               </TabsTrigger>
@@ -624,6 +635,7 @@ const TransformationXPLR: React.FC = () => {
                   currentProject={currentProject}
                   aiInsights={aiInsights}
                   selectedCompany={selectedCompany}
+                  companies={companies}
                   onNewProject={handleNewProject}
                   onShowAIAssistant={() => setShowAIAssistant(true)}
                   onExportDeck={handleExportDeck}
@@ -644,6 +656,49 @@ const TransformationXPLR: React.FC = () => {
                     setWorkflowPhases(prev => prev.map(phase => (phase.id === phaseId ? { ...phase, status, progress: progress || 0 } : phase)));
                   }}
                   onAIAssistantOpen={handleAIAssistantOpen}
+                  onGenerateAI={async () => {
+                    if (currentProject) {
+                      try {
+                        console.log("🚀 Generating AI analysis from Workflow tab for:", currentProject.clientName);
+
+                        const projectData = {
+                          companyId: currentProject.id,
+                          companyName: currentProject.clientName,
+                          industry: currentProject.industry,
+                          region: currentProject.region,
+                          revenue: currentProject.revenue,
+                          employees: currentProject.employees,
+                          currentERP: currentProject.currentERP,
+                          painPoints: currentProject.painPoints,
+                          objectives: currentProject.objectives,
+                          timeline: currentProject.timeline,
+                          budget: currentProject.budget,
+                          engagementType: currentProject.engagementType,
+                        };
+
+                        const response = await fetch("/api/generate-analysis", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(projectData),
+                        });
+
+                        if (!response.ok) {
+                          throw new Error("Failed to generate AI analysis");
+                        }
+
+                        const analysisResults = await response.json();
+                        console.log("✅ AI analysis generated successfully:", analysisResults);
+
+                        // Reload the company data to get the new phases and insights
+                        await loadCompanyData(currentProject);
+
+                        addNotification(`🎉 AI analysis complete! Generated ${analysisResults.workflowPhases?.length || 0} workflow phases`, "success");
+                      } catch (error) {
+                        console.error("❌ Error generating AI analysis:", error);
+                        addNotification("❌ Failed to generate AI analysis. Please try again.", "error");
+                      }
+                    }
+                  }}
                 />
               </div>
             </TabsContent>

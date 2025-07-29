@@ -59,9 +59,10 @@ interface WorkflowPhasesProps {
   onViewDetails: (phase: WorkflowPhase) => void;
   onPhaseStateChange?: (phaseId: number, newStatus: WorkflowPhase["status"], newProgress?: number) => void;
   onAIAssistantOpen?: (action: string, context: any) => void;
+  onGenerateAI?: () => Promise<void>; // New callback for AI analysis generation
 }
 
-export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentPhase, onPhaseSelect, onViewDetails, onPhaseStateChange, onAIAssistantOpen }) => {
+export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentPhase, onPhaseSelect, onViewDetails, onPhaseStateChange, onAIAssistantOpen, onGenerateAI }) => {
   const [selectedPhaseId, setSelectedPhaseId] = useState<number>(currentPhase);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -496,6 +497,23 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
   const completedPhases = phases.filter(p => p.status === "completed").length;
   const inProgressPhases = phases.filter(p => p.status === "in-progress" || p.status === "ai-enhanced");
 
+  // Function to generate AI analysis and workflow phases
+  const generateAIAnalysis = async () => {
+    if (!onGenerateAI) {
+      alert("AI analysis generation is not available.");
+      return;
+    }
+
+    try {
+      console.log("🚀 Generating AI analysis and 7-phase methodology...");
+      await onGenerateAI();
+      console.log("✅ AI analysis generation initiated.");
+    } catch (error) {
+      console.error("❌ Error generating AI analysis:", error);
+      alert(`Failed to generate AI analysis: ${error}`);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Enterprise Dashboard Header */}
@@ -702,27 +720,66 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
             </CardHeader>
 
             <CardContent className="space-y-3">
-              {/* Vertical Phase Cards */}
-              {filteredPhases.map((phase, index) => {
-                const isActive = phase.id === selectedPhaseId;
-                const isCompleted = phase.status === "completed";
-                const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
-                const isPending = phase.status === "pending";
-                const isLoading = loadingPhases.has(phase.id);
+              {/* No Phases State - Generate AI Analysis */}
+              {phases.length === 0 ? (
+                <div className="text-center py-8 px-4">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                      <Brain className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">7-Phase Transformation Methodology</h3>
+                      <p className="text-sm text-gray-600 mb-4 max-w-md">
+                        Generate AI-powered workflow phases tailored to your company's transformation journey. Our advanced AI will create a comprehensive 7-phase methodology based on your specific
+                        needs.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={generateAIAnalysis}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate AI Analysis & 7-Phase Methodology
+                    </Button>
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-3 w-3" />
+                        <span>~2-3 minutes</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Target className="h-3 w-3" />
+                        <span>7 Custom Phases</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Zap className="h-3 w-3" />
+                        <span>AI-Accelerated</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Vertical Phase Cards */}
+                  {filteredPhases.map((phase, index) => {
+                    const isActive = phase.id === selectedPhaseId;
+                    const isCompleted = phase.status === "completed";
+                    const isInProgress = phase.status === "in-progress" || phase.status === "ai-enhanced";
+                    const isPending = phase.status === "pending";
+                    const isLoading = loadingPhases.has(phase.id);
 
-                return (
-                  <div
-                    key={phase.id}
-                    className={`
+                    return (
+                      <div
+                        key={phase.id}
+                        className={`
                       group relative cursor-pointer transition-all duration-300 ease-in-out
                       ${isActive ? "transform scale-[1.02] z-10" : "hover:transform hover:scale-[1.01]"}
                       ${isLoading ? "pointer-events-none" : ""}
                     `}
-                    onClick={() => handlePhaseClick(phase)}
-                  >
-                    {/* Vertical Phase Card */}
-                    <Card
-                      className={`
+                        onClick={() => handlePhaseClick(phase)}
+                      >
+                        {/* Vertical Phase Card */}
+                        <Card
+                          className={`
                         relative border-2 transition-all duration-300 shadow-md hover:shadow-lg
                         ${isActive ? "border-blue-400 shadow-blue-100 ring-2 ring-blue-200" : "border-gray-200 hover:border-gray-300"}
                         ${isCompleted ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200" : ""}
@@ -731,96 +788,98 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                         ${phase.status === "ai-enhanced" ? "bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200" : ""}
                         overflow-hidden
                       `}
-                    >
-                      {/* Status Indicator Strip */}
-                      <div
-                        className={`
+                        >
+                          {/* Status Indicator Strip */}
+                          <div
+                            className={`
                         absolute top-0 left-0 bottom-0 w-1
                         ${isCompleted ? "bg-gradient-to-b from-green-400 to-emerald-500" : ""}
                         ${isInProgress ? "bg-gradient-to-b from-blue-400 to-cyan-500" : ""}
                         ${isPending ? "bg-gradient-to-b from-gray-300 to-slate-400" : ""}
                         ${phase.status === "ai-enhanced" ? "bg-gradient-to-b from-purple-400 to-violet-500" : ""}
                       `}
-                      />
+                          />
 
-                      {/* Loading Overlay */}
-                      {isLoading && (
-                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20">
-                          <div className="flex items-center space-x-2">
-                            <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
-                            <span className="text-sm text-gray-600">Processing...</span>
-                          </div>
-                        </div>
-                      )}
+                          {/* Loading Overlay */}
+                          {isLoading && (
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20">
+                              <div className="flex items-center space-x-2">
+                                <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                                <span className="text-sm text-gray-600">Processing...</span>
+                              </div>
+                            </div>
+                          )}
 
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-4">
-                          {/* Phase Number and Status Icon */}
-                          <div
-                            className={`
+                          <CardContent className="p-4">
+                            <div className="flex items-center space-x-4">
+                              {/* Phase Number and Status Icon */}
+                              <div
+                                className={`
                             w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md flex-shrink-0
                             ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600" : ""}
                             ${isInProgress ? "bg-gradient-to-br from-blue-500 to-cyan-600" : ""}
                             ${isPending ? "bg-gradient-to-br from-gray-400 to-slate-500" : ""}
                             ${phase.status === "ai-enhanced" ? "bg-gradient-to-br from-purple-500 to-violet-600" : ""}
                           `}
-                          >
-                            {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : <span className="text-lg">{phase.id}</span>}
-                          </div>
-
-                          {/* Phase Information */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">{phase.title}</h3>
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
-                                    {phase.status.replace("-", " ").toLowerCase()}
-                                  </Badge>
-                                  {phase.aiAcceleration > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                                      <Sparkles className="h-3 w-3 mr-1" />
-                                      {Math.round(phase.aiAcceleration)}% AI
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                {/* Progress Bar */}
-                                <div className="mb-2">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs font-medium text-gray-600">Progress</span>
-                                    <span className="text-xs font-bold text-gray-900">{Math.round(phase.progress)}%</span>
-                                  </div>
-                                  <div className="enterprise-progress-bar">
-                                    <div className="progress-fill" style={{ width: `${phase.progress}%` }}></div>
-                                  </div>
-                                </div>
-
-                                {/* Duration and Key Info */}
-                                <div className="flex items-center justify-between text-xs text-gray-600">
-                                  <div className="flex items-center space-x-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{phase.duration}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-3">
-                                    <span>{phase.deliverables?.length || 0} deliverables</span>
-                                    <span>{phase.keyActivities?.length || 0} activities</span>
-                                  </div>
-                                </div>
+                              >
+                                {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : <span className="text-lg">{phase.id}</span>}
                               </div>
 
-                              {/* Action Buttons */}
-                              <div className="flex items-center space-x-1 ml-2">
-                                <EnterprisePhaseActions phase={phase} onAction={handlePhaseAction} isLoading={isLoading} />
+                              {/* Phase Information */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1">{phase.title}</h3>
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <Badge variant="outline" className={`text-xs ${getStatusColor(phase.status)}`}>
+                                        {phase.status.replace("-", " ").toLowerCase()}
+                                      </Badge>
+                                      {phase.aiAcceleration > 0 && (
+                                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                          <Sparkles className="h-3 w-3 mr-1" />
+                                          {Math.round(phase.aiAcceleration)}% AI
+                                        </Badge>
+                                      )}
+                                    </div>
+
+                                    {/* Progress Bar */}
+                                    <div className="mb-2">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-medium text-gray-600">Progress</span>
+                                        <span className="text-xs font-bold text-gray-900">{Math.round(phase.progress)}%</span>
+                                      </div>
+                                      <div className="enterprise-progress-bar">
+                                        <div className="progress-fill" style={{ width: `${phase.progress}%` }}></div>
+                                      </div>
+                                    </div>
+
+                                    {/* Duration and Key Info */}
+                                    <div className="flex items-center justify-between text-xs text-gray-600">
+                                      <div className="flex items-center space-x-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>{phase.duration}</span>
+                                      </div>
+                                      <div className="flex items-center space-x-3">
+                                        <span>{phase.deliverables?.length || 0} deliverables</span>
+                                        <span>{phase.keyActivities?.length || 0} activities</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center space-x-1 ml-2">
+                                    <EnterprisePhaseActions phase={phase} onAction={handlePhaseAction} isLoading={isLoading} />
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              })}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

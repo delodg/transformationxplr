@@ -39,6 +39,7 @@ import { TransformationProject, AIInsight } from "../../types";
 interface CommandCenterProps {
   currentProject: TransformationProject;
   aiInsights: AIInsight[];
+  companies?: any[]; // Real companies from database
   onNewProject: () => void;
   onShowAIAssistant: () => void;
   onExportDeck: () => void;
@@ -49,15 +50,25 @@ interface CommandCenterProps {
 
 // Company data mapping for the selector
 const COMPANY_OPTIONS = [
-  { value: "mastec", label: "MasTec Power Delivery", industry: "Infrastructure & Construction" },
-  { value: "global-tech", label: "Global Tech Solutions", industry: "Technology & Software" },
-  { value: "meridian-manufacturing", label: "Meridian Manufacturing Corp", industry: "Manufacturing & Industrial" },
-  { value: "apex-financial", label: "Apex Financial Services", industry: "Financial Services" },
+  { value: "mastec", label: "MasTec Power Delivery", industry: "Infrastructure & Construction", region: "North America", currentPhase: 1 },
+  { value: "global-tech", label: "Global Tech Solutions", industry: "Technology & Software", region: "Global", currentPhase: 2 },
+  { value: "meridian-manufacturing", label: "Meridian Manufacturing Corp", industry: "Manufacturing & Industrial", region: "Europe", currentPhase: 1 },
+  { value: "apex-financial", label: "Apex Financial Services", industry: "Financial Services", region: "North America", currentPhase: 1 },
 ];
+
+interface CompanyOption {
+  value: string;
+  label: string;
+  industry: string;
+  region?: string;
+  status?: string;
+  currentPhase?: number;
+}
 
 export const CommandCenter: React.FC<CommandCenterProps> = ({
   currentProject,
   aiInsights,
+  companies = [], // Real companies from database
   onNewProject,
   onShowAIAssistant,
   onExportDeck,
@@ -89,10 +100,34 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     return `${month} ${day}, ${year}`;
   }, []);
 
+  // **CRITICAL FIX**: Use real companies from database instead of demo data
+  const companyOptions: CompanyOption[] = useMemo(() => {
+    if (companies && companies.length > 0) {
+      return companies.map(company => ({
+        value: company.id,
+        label: company.clientName,
+        industry: company.industry,
+        region: company.region,
+        status: company.status,
+        currentPhase: company.currentPhase,
+      }));
+    }
+    // Fallback to demo data only if no real companies
+    return COMPANY_OPTIONS;
+  }, [companies]);
+
+  console.log("🏢 CommandCenter companies:", companies?.length || 0, "real companies");
+  console.log("🎯 Company options:", companyOptions.length, "options available");
+
   // Enhanced insights calculations
   const phaseInsights = useMemo(() => {
     return aiInsights.filter(insight => insight.phase === currentProject.currentPhase);
   }, [aiInsights, currentProject.currentPhase]);
+
+  // Get selected company info for display
+  const selectedCompanyInfo = useMemo(() => {
+    return companyOptions.find(option => option.value === selectedCompany);
+  }, [companyOptions, selectedCompany]);
 
   const totalEstimatedValue = useMemo(() => {
     return aiInsights.filter(insight => insight.estimatedValue).reduce((total, insight) => total + (insight.estimatedValue || 0), 0);
@@ -164,19 +199,36 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             <div className="flex items-center space-x-3" data-tour="company-selection">
               <Select value={selectedCompany} onValueChange={handleCompanyChange}>
                 <SelectTrigger className="w-[300px]" aria-label="Select company for analysis">
-                  <SelectValue placeholder="Select company">{COMPANY_OPTIONS.find(c => c.value === selectedCompany)?.label}</SelectValue>
+                  <SelectValue placeholder="Select company">{companyOptions.find(c => c.value === selectedCompany)?.label || "Select a company"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {COMPANY_OPTIONS.map(company => (
-                    <SelectItem key={company.value} value={company.value}>
-                      <div className="flex flex-col text-left">
-                        <span className="font-medium">{company.label}</span>
-                        <span className="text-xs text-gray-500">{company.industry}</span>
-                      </div>
+                  {companyOptions.length === 0 ? (
+                    <SelectItem value="no-companies" disabled>
+                      No companies available - Create your first company
                     </SelectItem>
-                  ))}
+                  ) : (
+                    companyOptions.map(company => (
+                      <SelectItem key={company.value} value={company.value}>
+                        <div className="flex flex-col text-left">
+                          <span className="font-medium">{company.label}</span>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{company.industry}</span>
+                            {company.region && <span>• {company.region}</span>}
+                            {company.currentPhase && <span>• Phase {company.currentPhase}</span>}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+
+              {/* Debug info for companies */}
+              <div className="text-xs text-gray-500">
+                {companies?.length || 0} companies loaded
+                {companyOptions.length !== companies?.length && <span className="text-orange-600"> (using demo data)</span>}
+              </div>
+
               <Button variant="outline" size="sm" onClick={() => handleCompanyChange(selectedCompany)} className="bg-white/60 hover:bg-white/80">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
@@ -262,10 +314,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 id="hero-heading" className="text-3xl font-bold mb-2">
-                Transformation XPLR
+                {selectedCompanyInfo?.label || currentProject?.clientName || "Company Overview"}
               </h1>
               <p className="text-blue-100 text-lg" aria-describedby="hero-heading">
-                AI-Powered Finance Transformation Platform
+                AI-Powered Transformation Dashboard
               </p>
               <div className="flex items-center space-x-2 mt-3">
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
