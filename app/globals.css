@@ -411,8 +411,7 @@
 }
 
 .ai-assistant-markdown code {
-  background-color: #f1f5f9;
-  color: #475569;
+  color: #374151;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
@@ -420,7 +419,6 @@
 }
 
 .ai-assistant-markdown pre {
-  background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
   padding: 0.75rem;

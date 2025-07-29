@@ -116,8 +116,8 @@ export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, 
       prefers: "actionable",
       focusAreas: [],
     },
-    sessionStartTime: new Date("2024-01-15T00:00:00Z"),
-    lastActivity: new Date("2024-01-15T00:00:00Z"),
+    sessionStartTime: new Date("2025-01-15T00:00:00Z"),
+    lastActivity: new Date("2025-01-15T00:00:00Z"),
     responseQuality: {
       totalResponses: 0,
       avgConfidence: 0,
@@ -208,7 +208,7 @@ I'm **Axel**, your enterprise-grade AI assistant specialized in **Finance Transf
 
 **💡 Tip:** Use the **Quick Actions** below to get started, or ask me anything about your transformation journey!`,
         role: "assistant",
-        timestamp: new Date("2024-01-15T00:00:00Z"),
+        timestamp: new Date("2025-01-15T00:00:00Z"),
         confidence: 95,
         relatedPhase: currentProject.currentPhase,
       };
@@ -665,7 +665,7 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
 
 **💡 Tip:** Use the **Quick Actions** below to get started, or ask me anything about your transformation journey!`,
       role: "assistant",
-      timestamp: new Date("2024-01-15T00:00:00Z"),
+      timestamp: new Date("2025-01-15T00:00:00Z"),
       confidence: 95,
       relatedPhase: currentProject.currentPhase,
     };

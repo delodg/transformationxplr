@@ -562,76 +562,91 @@ async function generateAllWorkflowPhases(questionnaireData: any) {
   const baseDate = new Date();
   const phases = [];
 
+  // Updated phases to match PLANNING.md 7-Phase User Journey
   const phaseTemplates = [
     {
       phaseNumber: 1,
-      title: "Project Initiation & Planning",
-      description: `Initial assessment and planning phase for ${questionnaireData?.companyName || "your company"}'s transformation`,
+      title: "Project Initiation & Setup",
+      description: `AI-powered intelligence gathering and engagement setup for ${questionnaireData?.companyName || "your company"}'s transformation`,
       duration: "2 weeks",
       traditionalDuration: "4 weeks",
       aiAcceleration: 50,
-      deliverables: ["Project charter", "Stakeholder matrix", "Communication plan", "Risk assessment"],
-      keyActivities: ["Stakeholder interviews", "Current state documentation", "Team formation", "Tool setup"],
+      deliverables: ["Client intelligence profile", "SOW analysis", "Data collection plan", "Team assignment", "Stakeholder mapping"],
+      keyActivities: ["Client onboarding", "Engagement type selection", "Document upload", "Team setup", "AI-powered intelligence gathering"],
+      hackettIP: ["Client Profiling Templates", "Industry Benchmarks", "Engagement Playbooks", "SOW Analysis Framework"],
+      aiSuggestions: ["Auto-populated client profile", "Recommended data collection approach", "Risk assessment", "Optimal team composition"],
     },
     {
       phaseNumber: 2,
-      title: "Current State Assessment",
-      description: "Comprehensive analysis of existing finance processes and systems",
+      title: "Parallel Workstream Management",
+      description: "Comprehensive data gathering across multiple workstreams with AI-assisted analysis",
       duration: "3 weeks",
       traditionalDuration: "6 weeks",
       aiAcceleration: 45,
-      deliverables: ["Process documentation", "Gap analysis", "Baseline metrics", "System inventory"],
-      keyActivities: ["Process mapping", "System analysis", "Performance measurement", "Data quality assessment"],
+      deliverables: ["Benchmark data portal", "Executive interview insights", "Stakeholder survey results", "CMM workshop outcomes"],
+      keyActivities: ["Benchmark data validation", "Executive interviews", "Dynamic stakeholder surveys", "CMM workshops"],
+      hackettIP: ["Benchmark Database", "Interview Templates", "Survey Frameworks", "CMM Assessment Tools"],
+      aiSuggestions: ["Dynamic question generation", "Automated benchmark comparisons", "Interview analysis", "Workshop facilitation"],
     },
     {
       phaseNumber: 3,
-      title: "Future State Design",
-      description: "Design optimal future state processes and technology architecture",
-      duration: "4 weeks",
-      traditionalDuration: "8 weeks",
-      aiAcceleration: 40,
-      deliverables: ["Future state design", "Technology roadmap", "Process blueprints", "Integration plan"],
-      keyActivities: ["Solution design", "Technology selection", "Process optimization", "Integration planning"],
+      title: "AI-Powered Synthesis & Analysis",
+      description: "Intelligent data triangulation and gap analysis with automated insights generation",
+      duration: "2 weeks",
+      traditionalDuration: "4 weeks",
+      aiAcceleration: 50,
+      deliverables: ["Gap analysis report", "Benchmark comparison", "Target operating model", "Insight synthesis"],
+      keyActivities: ["Data triangulation", "AI-driven gap identification", "Benchmark analysis", "Operating model definition"],
+      hackettIP: ["Analysis Frameworks", "Gap Assessment Tools", "Operating Model Templates", "Benchmark Standards"],
+      aiSuggestions: ["Automated pattern recognition", "Intelligent gap identification", "Predictive insights", "Model optimization"],
     },
     {
       phaseNumber: 4,
-      title: "Implementation Planning",
-      description: "Detailed planning for transformation implementation",
+      title: "Initiative Identification & Prioritization",
+      description: "AI-generated recommendations with value quantification and intelligent prioritization",
       duration: "3 weeks",
       traditionalDuration: "5 weeks",
-      aiAcceleration: 35,
-      deliverables: ["Implementation plan", "Resource allocation", "Timeline", "Change management strategy"],
-      keyActivities: ["Detailed planning", "Resource planning", "Risk mitigation", "Change strategy"],
+      aiAcceleration: 40,
+      deliverables: ["Initiative recommendations", "ROI calculations", "Priority matrix", "Implementation roadmap"],
+      keyActivities: ["AI recommendation generation", "Value quantification", "Priority algorithms", "Documentation automation"],
+      hackettIP: ["Initiative Libraries", "ROI Models", "Prioritization Frameworks", "Value Assessment Tools"],
+      aiSuggestions: ["Intelligent initiative matching", "Automated ROI calculations", "Risk-adjusted prioritization", "Quick win identification"],
     },
     {
       phaseNumber: 5,
-      title: "System Configuration & Testing",
-      description: "Configure systems and conduct comprehensive testing",
-      duration: "6 weeks",
-      traditionalDuration: "10 weeks",
-      aiAcceleration: 40,
-      deliverables: ["Configured systems", "Test results", "User documentation", "Training materials"],
-      keyActivities: ["System configuration", "Integration testing", "User acceptance testing", "Documentation"],
+      title: "Roadmap Development",
+      description: "Dynamic roadmap construction with dependency mapping and resource optimization",
+      duration: "3 weeks",
+      traditionalDuration: "6 weeks",
+      aiAcceleration: 50,
+      deliverables: ["Dynamic roadmap", "Gantt charts", "Resource allocation plan", "Business case"],
+      keyActivities: ["Roadmap construction", "Dependency mapping", "Resource planning", "Business case preparation"],
+      hackettIP: ["Roadmap Templates", "Gantt Tools", "Resource Models", "Business Case Frameworks"],
+      aiSuggestions: ["Optimal sequencing", "Resource optimization", "Risk mitigation", "Timeline acceleration"],
     },
     {
       phaseNumber: 6,
-      title: "Deployment & Go-Live",
-      description: "Deploy solutions and manage go-live activities",
-      duration: "4 weeks",
-      traditionalDuration: "6 weeks",
-      aiAcceleration: 30,
-      deliverables: ["Production systems", "Go-live support", "Performance monitoring", "User support"],
-      keyActivities: ["Production deployment", "Go-live support", "Performance monitoring", "Issue resolution"],
+      title: "Client Review & Handover",
+      description: "Interactive presentations and collaborative solution selection with professional deliverables",
+      duration: "2 weeks",
+      traditionalDuration: "3 weeks",
+      aiAcceleration: 35,
+      deliverables: ["Interactive presentations", "Solution selection", "Final deliverables", "Transition plan"],
+      keyActivities: ["Presentation preparation", "Collaborative review", "Solution finalization", "Handover planning"],
+      hackettIP: ["Presentation Templates", "Review Frameworks", "Collaboration Tools", "Handover Checklists"],
+      aiSuggestions: ["Dynamic presentations", "Interactive elements", "Collaborative tools", "Seamless transitions"],
     },
     {
       phaseNumber: 7,
-      title: "Post-Implementation & Optimization",
-      description: "Monitor performance and optimize processes",
-      duration: "8 weeks",
-      traditionalDuration: "12 weeks",
-      aiAcceleration: 35,
-      deliverables: ["Performance reports", "Optimization recommendations", "Lessons learned", "Handover documentation"],
-      keyActivities: ["Performance monitoring", "Process optimization", "User support", "Knowledge transfer"],
+      title: "Implementation Tracking",
+      description: "Continuous monitoring with benefits realization tracking and success metrics reporting",
+      duration: "Ongoing",
+      traditionalDuration: "Ongoing",
+      aiAcceleration: 40,
+      deliverables: ["Progress dashboards", "Benefits tracking", "Success metrics", "Optimization recommendations"],
+      keyActivities: ["Progress monitoring", "Benefits realization", "Roadmap maintenance", "Success reporting"],
+      hackettIP: ["Tracking Dashboards", "Benefits Models", "Success Metrics", "Optimization Tools"],
+      aiSuggestions: ["Real-time monitoring", "Predictive analytics", "Automated reporting", "Continuous optimization"],
     },
   ];
 
@@ -641,25 +656,38 @@ async function generateAllWorkflowPhases(questionnaireData: any) {
     const durationWeeks = parseInt(template.duration.split(" ")[0]);
     const estimatedCompletion = new Date(startDate.getTime() + durationWeeks * 7 * 24 * 60 * 60 * 1000);
 
+    // Get Hackett IP assets for this phase
+    let hackettIPAssets = template.hackettIP || [];
+    try {
+      const hackettResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/hackett-ip?phase=${template.phaseNumber}&industry=${questionnaireData.industry}&limit=8`);
+      if (hackettResponse.ok) {
+        const hackettResult = await hackettResponse.json();
+        if (hackettResult.success) {
+          hackettIPAssets = hackettResult.data.map((asset: any) => asset.title);
+        }
+      }
+    } catch (error) {
+      console.log("Could not fetch Hackett IP for phase", template.phaseNumber, "- using fallback:", error);
+    }
+
     phases.push({
-      phaseNumber: template.phaseNumber,
+      id: template.phaseNumber,
       title: template.title,
       description: template.description,
-      status: i === 0 ? "in-progress" : "pending",
-      aiAcceleration: template.aiAcceleration,
       duration: template.duration,
       traditionalDuration: template.traditionalDuration,
-      hackettIP: [`Phase ${i + 1} Templates`, "Industry Benchmarks", "Best Practices"],
-      deliverables: template.deliverables,
-      aiSuggestions: [`AI-powered ${template.title.toLowerCase()}`, "Automated analytics", "Smart recommendations"],
-      keyActivities: template.keyActivities,
-      dependencies: i === 0 ? ["Leadership commitment"] : [`Phase ${i} completion`],
-      teamRole: ["Project Manager", "Business Analyst", "Technical Lead"],
-      clientTasks: ["Provide access to systems", "Assign key stakeholders", "Review deliverables"],
-      estimatedCompletion: estimatedCompletion.toISOString().split("T")[0],
-      riskFactors: ["Resource availability", "Stakeholder alignment", "Technical complexity"],
-      successMetrics: ["Deliverable completion", "Quality metrics", "Timeline adherence"],
-      progress: i === 0 ? 25 : 0,
+      aiAcceleration: template.aiAcceleration,
+      deliverables: JSON.stringify(template.deliverables),
+      keyActivities: JSON.stringify(template.keyActivities),
+      hackettIP: JSON.stringify(hackettIPAssets), // Use real Hackett IP data
+      aiSuggestions: JSON.stringify(template.aiSuggestions),
+      dependencies: JSON.stringify(["Previous phase completion", "Stakeholder availability", "Required data access"]),
+      teamRole: JSON.stringify(["Project Manager", "Business Analyst", "Change Management Specialist"]),
+      clientTasks: JSON.stringify(["Provide required documentation", "Assign dedicated resources", "Participate in workshops"]),
+      riskFactors: JSON.stringify(["Resource availability constraints", "Stakeholder alignment challenges", "Technology integration complexity"]),
+      successMetrics: JSON.stringify([`${template.title} completion within timeline`, "Stakeholder satisfaction > 85%", "Quality metrics achieved"]),
+      estimatedHours: 0,
+      complexity: "standard",
     });
   }
 

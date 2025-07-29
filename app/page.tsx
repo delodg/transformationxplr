@@ -14,6 +14,7 @@ import { AIAnalysisProgress } from "../components/ai/AIAnalysisProgress";
 import { ClientOnboardingModal } from "../components/onboarding/ClientOnboarding";
 import { GuidedTour } from "../components/guidance/GuidedTour";
 import { CompanyAnalysisDashboard } from "../components/analytics";
+import { HackettIPLibrary } from "../components/hackett-ip/HackettIPLibrary";
 import { useUser } from "@clerk/nextjs";
 
 // Import additional UI components for the integrated header
@@ -204,10 +205,63 @@ const TransformationXPLR: React.FC = () => {
     }, 5000);
   };
 
-  // Enhanced event handlers
+  // Enhanced event handlers for cross-section navigation
   const handleNewProject = () => {
     addNotification("Starting new project creation...", "info");
     setShowOnboarding(true);
+  };
+
+  // Cross-section navigation functions
+  const handleNavigateToPhase = (phaseNumber: number) => {
+    setActiveTab("workflow");
+    // Focus on specific phase in workflow
+    if (currentProject) {
+      setCurrentProject(prev => (prev ? { ...prev, currentPhase: phaseNumber } : null));
+    }
+    addNotification(`Navigated to Phase ${phaseNumber}`, "info");
+  };
+
+  const handleViewPhaseAnalytics = (phaseNumber: number) => {
+    setActiveTab("analytics");
+    addNotification(`Viewing analytics for Phase ${phaseNumber}`, "info");
+  };
+
+  const handleAccessHackettIP = (category?: string) => {
+    setActiveTab("hackett-ip");
+    if (category) {
+      addNotification(`Accessing Hackett IP: ${category}`, "info");
+    } else {
+      addNotification("Accessing Hackett IP Library", "info");
+    }
+  };
+
+  const handlePhaseProgress = (phaseId: number, newProgress: number) => {
+    setWorkflowPhases(prev => prev.map(phase => (phase.id === phaseId ? { ...phase, progress: newProgress } : phase)));
+
+    // Update current project if this is the current phase
+    if (currentProject && currentProject.currentPhase === phaseId) {
+      setCurrentProject(prev => (prev ? { ...prev, progress: newProgress } : null));
+    }
+
+    addNotification(`Phase ${phaseId} progress updated to ${newProgress}%`, "success");
+  };
+
+  const handlePhaseCompletion = (phaseId: number) => {
+    setWorkflowPhases(prev => prev.map(phase => (phase.id === phaseId ? { ...phase, status: "completed", progress: 100 } : phase)));
+
+    // Auto-advance to next phase if current
+    if (currentProject && currentProject.currentPhase === phaseId && phaseId < 7) {
+      const nextPhase = phaseId + 1;
+      setCurrentProject(prev => (prev ? { ...prev, currentPhase: nextPhase } : null));
+      addNotification(`Phase ${phaseId} completed! Advanced to Phase ${nextPhase}`, "success");
+
+      // Auto-switch to next phase view
+      setTimeout(() => {
+        handleNavigateToPhase(nextPhase);
+      }, 2000);
+    } else {
+      addNotification(`Phase ${phaseId} completed!`, "success");
+    }
   };
 
   // 🔥 NEW: AI Assistant button handler
@@ -641,6 +695,9 @@ const TransformationXPLR: React.FC = () => {
                   onExportDeck={handleExportDeck}
                   onViewAnalytics={handleViewAnalytics}
                   onCompanyChange={handleCompanyChange}
+                  onNavigateToPhase={handleNavigateToPhase}
+                  onViewPhaseAnalytics={handleViewPhaseAnalytics}
+                  onAccessHackettIP={handleAccessHackettIP}
                 />
               </div>
             </TabsContent>
@@ -656,6 +713,10 @@ const TransformationXPLR: React.FC = () => {
                     setWorkflowPhases(prev => prev.map(phase => (phase.id === phaseId ? { ...phase, status, progress: progress || 0 } : phase)));
                   }}
                   onAIAssistantOpen={handleAIAssistantOpen}
+                  onPhaseProgress={handlePhaseProgress}
+                  onPhaseCompletion={handlePhaseCompletion}
+                  onViewAnalytics={handleViewPhaseAnalytics}
+                  onAccessHackettIP={handleAccessHackettIP}
                   onGenerateAI={async () => {
                     if (currentProject) {
                       try {
@@ -711,21 +772,14 @@ const TransformationXPLR: React.FC = () => {
 
             <TabsContent value="hackett-ip">
               <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Hackett IP Library</CardTitle>
-                    <CardDescription>
-                      Access to {currentProject.hackettIPMatches} matched intellectual property assets for {currentProject.clientName}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">AI-curated IP library integration coming soon</p>
-                      <p className="text-sm text-gray-500 mt-2">Personalized content based on your company analysis</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <HackettIPLibrary
+                  currentProject={currentProject}
+                  selectedPhase={currentProject.currentPhase}
+                  onAssetSelect={asset => {
+                    console.log("Selected Hackett IP asset:", asset);
+                    // Future: Handle asset selection (download, preview, etc.)
+                  }}
+                />
               </div>
             </TabsContent>
           </Tabs>

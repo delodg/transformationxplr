@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
 🎯 TRANSFORMATION INTELLIGENCE
 ├── Current Execution Phase: Phase ${phaseContext?.currentPhase || "1"} of 7 (${Math.round(projectContext?.progress || 0)}% Complete)
-├── Project Timeline: ${projectContext?.startDate || "Q1 2024"} → ${projectContext?.estimatedCompletion || "Q4 2024"}
+├── Project Timeline: ${projectContext?.startDate || "Q1 2025"} → ${projectContext?.estimatedCompletion || "Q4 2025"}
 ├── AI Acceleration Factor: ${Math.round(projectContext?.aiAcceleration || 0)}% Faster Than Traditional Methods
 ├── Core Team Composition: ${projectContext?.teamMembers?.length || "12"} Senior Specialists + Executive Sponsors
 ├── Engagement Model: ${projectContext?.engagementType || "Enterprise Finance Transformation Blueprint"}

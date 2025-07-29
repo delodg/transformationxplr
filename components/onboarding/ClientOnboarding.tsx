@@ -36,6 +36,15 @@ import {
 } from "lucide-react";
 import { ClientOnboarding } from "../../types";
 
+// Simple debounce utility function
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  };
+};
+
 interface ClientOnboardingProps {
   isVisible: boolean;
   onClose: () => void;
@@ -46,6 +55,7 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ClientOnboarding>({
     companyName: "",
+    companyNumber: "", // New field for company identifier
     industry: "",
     revenue: "",
     employees: "",
@@ -66,10 +76,22 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
     estimatedValue: number;
     riskLevel: "low" | "medium" | "high";
     confidence: number;
+    keyInsights?: string[];
+    recommendedApproach?: {
+      phase1: string;
+      phase2: string;
+      phase3: string;
+      criticalSuccessFactors: string[];
+    };
+    riskFactors?: string[];
+    quickWins?: string[];
   } | null>(null);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [currentAnalysisStep, setCurrentAnalysisStep] = useState(""); // Track analysis progress
+  const [isLookingUpCompany, setIsLookingUpCompany] = useState(false); // New state for company lookup
+  const [autoPopulatedFields, setAutoPopulatedFields] = useState<string[]>([]); // Track which fields were auto-populated
 
   const industries = [
     "Infrastructure & Construction",
@@ -116,8 +138,105 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
 
   const complianceOptions = ["SOX (Sarbanes-Oxley)", "GAAP", "IFRS", "SEC Reporting", "GDPR", "SOC 1/2", "ISO 27001", "Industry-specific regulations"];
 
-  const handleInputChange = (field: keyof ClientOnboarding, value: any) => {
+  const handleInputChange = (field: keyof ClientOnboarding, value: string | string[] | boolean) => {
+    console.log(`📝 Updating ${field}:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // New function for AI-powered company lookup
+  const handleCompanyLookup = async (companyIdentifier: string) => {
+    if (!companyIdentifier.trim()) return;
+
+    setIsLookingUpCompany(true);
+    try {
+      console.log("🔍 Looking up company information for:", companyIdentifier);
+
+      const response = await fetch("/api/company-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyIdentifier: companyIdentifier,
+          companyName: formData.companyName, // Also send current company name if available
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to lookup company information");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const companyInfo = result.data;
+        console.log("✅ Company information found:", companyInfo);
+
+        // Track which fields will be auto-populated
+        const fieldsToUpdate: string[] = [];
+        const updatedData: Partial<ClientOnboarding> = {};
+
+        if (companyInfo.companyName && companyInfo.companyName !== formData.companyName) {
+          updatedData.companyName = companyInfo.companyName;
+          fieldsToUpdate.push("companyName");
+        }
+        if (companyInfo.industry && companyInfo.industry !== formData.industry) {
+          updatedData.industry = companyInfo.industry;
+          fieldsToUpdate.push("industry");
+        }
+        if (companyInfo.revenue && companyInfo.revenue !== formData.revenue) {
+          updatedData.revenue = companyInfo.revenue;
+          fieldsToUpdate.push("revenue");
+        }
+        if (companyInfo.employees && companyInfo.employees !== formData.employees) {
+          updatedData.employees = companyInfo.employees;
+          fieldsToUpdate.push("employees");
+        }
+        if (companyInfo.region && companyInfo.region !== formData.region) {
+          updatedData.region = companyInfo.region;
+          fieldsToUpdate.push("region");
+        }
+
+        // Auto-populate the form fields
+        setFormData(prev => ({
+          ...prev,
+          ...updatedData,
+        }));
+
+        // Track auto-populated fields for visual feedback
+        setAutoPopulatedFields(fieldsToUpdate);
+
+        // Clear the auto-populated indicator after 5 seconds
+        setTimeout(() => {
+          setAutoPopulatedFields([]);
+        }, 5000);
+
+        // Show success notification with confidence level
+        console.log(`🎯 Auto-populated ${fieldsToUpdate.length} fields (${companyInfo.confidence}% confidence)`);
+      } else {
+        console.error("❌ Failed to get company information:", result.error);
+      }
+    } catch (error) {
+      console.error("❌ Error looking up company:", error);
+    } finally {
+      setIsLookingUpCompany(false);
+    }
+  };
+
+  // Debounced company lookup function
+  const debouncedCompanyLookup = React.useCallback(
+    debounce((identifier: string) => {
+      handleCompanyLookup(identifier);
+    }, 1000), // Wait 1 second after user stops typing
+    [formData.companyName]
+  );
+
+  // Handle company number change with auto-lookup
+  const handleCompanyNumberChange = (value: string) => {
+    handleInputChange("companyNumber", value);
+
+    // Trigger auto-lookup if we have enough characters
+    if (value.trim().length >= 3) {
+      debouncedCompanyLookup(value);
+    }
   };
 
   const handleArrayChange = (field: keyof ClientOnboarding, item: string, checked: boolean) => {
@@ -130,37 +249,94 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
   const generateAIRecommendations = async () => {
     setIsAnalyzing(true);
     setAnalysisProgress(0);
+    setCurrentAnalysisStep("Initializing AI analysis..."); // Reset step
 
-    // Simulate realistic AI analysis progress
-    const progressSteps = [
-      { progress: 15, message: "Analyzing company profile..." },
-      { progress: 35, message: "Evaluating industry benchmarks..." },
-      { progress: 55, message: "Calculating risk factors..." },
-      { progress: 75, message: "Matching Hackett IP assets..." },
-      { progress: 90, message: "Generating recommendations..." },
-      { progress: 100, message: "Analysis complete!" },
-    ];
+    try {
+      // Realistic AI analysis progress steps
+      const progressSteps = [
+        { progress: 10, message: "Analyzing company profile and industry context..." },
+        { progress: 25, message: "Evaluating transformation complexity factors..." },
+        { progress: 40, message: "Benchmarking against industry standards..." },
+        { progress: 55, message: "Assessing risk factors and mitigation strategies..." },
+        { progress: 70, message: "Calculating timeline and resource requirements..." },
+        { progress: 85, message: "Matching relevant Hackett IP assets..." },
+        { progress: 95, message: "Generating personalized recommendations..." },
+      ];
 
-    for (const step of progressSteps) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setAnalysisProgress(step.progress);
+      // Start progress simulation
+      let currentStepIndex = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStepIndex < progressSteps.length) {
+          const step = progressSteps[currentStepIndex];
+          setAnalysisProgress(step.progress);
+          setCurrentAnalysisStep(step.message);
+          currentStepIndex++;
+        }
+      }, 800);
+
+      console.log("🧠 Starting AI requirements analysis for:", formData.companyName);
+
+      // Call the AI analysis API
+      const response = await fetch("/api/analyze-requirements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI analysis");
+      }
+
+      const result = await response.json();
+
+      // Clear the progress interval
+      clearInterval(progressInterval);
+
+      // Complete the progress
+      setAnalysisProgress(100);
+      setCurrentAnalysisStep("Analysis complete!");
+
+      // Wait a moment to show completion
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (result.success && result.data) {
+        console.log("✅ AI analysis completed:", result.data);
+        setAIRecommendations(result.data);
+      } else {
+        console.error("❌ Failed to get AI analysis:", result.error);
+        // Fall back to basic analysis if API fails
+        throw new Error("AI analysis failed");
+      }
+    } catch (error) {
+      console.error("❌ Error during AI analysis:", error);
+
+      // Provide fallback analysis based on form data
+      const fallbackAnalysis = {
+        timeline: formData.maturityLevel === "basic" ? "20 weeks" : formData.maturityLevel === "advanced" ? "14 weeks" : "16 weeks",
+        hackettAssets: 1200,
+        estimatedValue: 6000000,
+        riskLevel: (formData.previousTransformations ? "low" : formData.maturityLevel === "basic" ? "high" : "medium") as "low" | "medium" | "high",
+        confidence: 85,
+        keyInsights: [
+          `${formData.industry} transformation with significant automation potential`,
+          "Multiple process optimization opportunities identified",
+          "Strong ROI potential through efficiency improvements",
+          "Technology modernization will enable real-time visibility",
+        ],
+        recommendedApproach: {
+          phase1: "Comprehensive stakeholder alignment and current state assessment",
+          phase2: "Multi-workstream data collection and executive interviews",
+          phase3: "AI-powered analysis and future state design",
+          criticalSuccessFactors: ["Executive sponsorship", "Change management", "Data quality focus"],
+        },
+        riskFactors: ["Change management complexity", "Integration with legacy systems", "Resource allocation challenges", "Data migration considerations"],
+        quickWins: ["Automated reporting implementation", "Process standardization", "Enhanced month-end procedures", "Improved expense workflows"],
+      };
+
+      setAnalysisProgress(100);
+      setCurrentAnalysisStep("Analysis complete!");
+      setAIRecommendations(fallbackAnalysis);
     }
-
-    // Generate recommendations based on form data
-    const baseTimeline = formData.maturityLevel === "basic" ? 20 : formData.maturityLevel === "advanced" ? 14 : 16;
-    const complexityFactor = formData.painPoints.length > 6 ? 1.2 : formData.painPoints.length < 3 ? 0.8 : 1.0;
-    const estimatedWeeks = Math.round(baseTimeline * complexityFactor);
-    const hackettAssets = 1200;
-    const estimatedValue = 6000000;
-    const riskLevel = formData.previousTransformations ? "low" : formData.maturityLevel === "basic" ? "high" : "medium";
-
-    setAIRecommendations({
-      timeline: `${estimatedWeeks} weeks`,
-      hackettAssets,
-      estimatedValue,
-      riskLevel,
-      confidence: 92,
-    });
 
     setIsAnalyzing(false);
   };
@@ -320,25 +496,84 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
                     <CardDescription className="text-gray-600">Basic details about your organization</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Company Number Field - Featured prominently */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Sparkles className="h-4 w-4 text-blue-600" />
+                        <Label className="text-sm font-medium text-blue-900">AI-Powered Company Lookup</Label>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex space-x-2">
+                          <div className="flex-1">
+                            <Input
+                              id="companyNumber"
+                              value={formData.companyNumber}
+                              onChange={e => handleCompanyNumberChange(e.target.value)}
+                              placeholder="Enter D-U-N-S, EIN, VAT, or Company Number"
+                              className="h-10 border-blue-200 focus:border-blue-500"
+                              disabled={isLookingUpCompany}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCompanyLookup(formData.companyNumber || "")}
+                            disabled={isLookingUpCompany || !formData.companyNumber?.trim()}
+                            className="h-10 px-4 bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                          >
+                            {isLookingUpCompany ? (
+                              <>
+                                <Zap className="h-3 w-3 mr-2 animate-spin" />
+                                Looking up...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-3 w-3 mr-2" />
+                                Auto-fill
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        {isLookingUpCompany && (
+                          <div className="flex items-center space-x-2 text-sm text-blue-700">
+                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span>AI is researching your company information...</span>
+                          </div>
+                        )}
+                        <p className="text-xs text-blue-700">Enter your company identifier to automatically populate industry, revenue, and employee count using AI.</p>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">
                           Company Name *
+                          {autoPopulatedFields.includes("companyName") && (
+                            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                              AI filled
+                            </Badge>
+                          )}
                         </Label>
                         <Input
                           id="companyName"
                           value={formData.companyName}
                           onChange={e => handleInputChange("companyName", e.target.value)}
                           placeholder="Enter your company name"
-                          className="h-12 border-gray-200 focus:border-blue-500 transition-colors"
+                          className={`h-12 border-gray-200 focus:border-blue-500 transition-colors ${autoPopulatedFields.includes("companyName") ? "ring-2 ring-green-200 bg-green-50" : ""}`}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="industry" className="text-sm font-medium text-gray-700">
                           Industry *
+                          {autoPopulatedFields.includes("industry") && (
+                            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                              AI filled
+                            </Badge>
+                          )}
                         </Label>
                         <Select value={formData.industry} onValueChange={value => handleInputChange("industry", value)}>
-                          <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500">
+                          <SelectTrigger className={`h-12 border-gray-200 focus:border-blue-500 ${autoPopulatedFields.includes("industry") ? "ring-2 ring-green-200 bg-green-50" : ""}`}>
                             <SelectValue placeholder="Select industry" />
                           </SelectTrigger>
                           <SelectContent>
@@ -353,9 +588,14 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
                       <div className="space-y-2">
                         <Label htmlFor="revenue" className="text-sm font-medium text-gray-700">
                           Annual Revenue *
+                          {autoPopulatedFields.includes("revenue") && (
+                            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                              AI filled
+                            </Badge>
+                          )}
                         </Label>
                         <Select value={formData.revenue} onValueChange={value => handleInputChange("revenue", value)}>
-                          <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500">
+                          <SelectTrigger className={`h-12 border-gray-200 focus:border-blue-500 ${autoPopulatedFields.includes("revenue") ? "ring-2 ring-green-200 bg-green-50" : ""}`}>
                             <SelectValue placeholder="Select revenue range" />
                           </SelectTrigger>
                           <SelectContent>
@@ -371,9 +611,14 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
                       <div className="space-y-2">
                         <Label htmlFor="employees" className="text-sm font-medium text-gray-700">
                           Employee Count *
+                          {autoPopulatedFields.includes("employees") && (
+                            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                              AI filled
+                            </Badge>
+                          )}
                         </Label>
                         <Select value={formData.employees} onValueChange={value => handleInputChange("employees", value)}>
-                          <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500">
+                          <SelectTrigger className={`h-12 border-gray-200 focus:border-blue-500 ${autoPopulatedFields.includes("employees") ? "ring-2 ring-green-200 bg-green-50" : ""}`}>
                             <SelectValue placeholder="Select employee range" />
                           </SelectTrigger>
                           <SelectContent>
@@ -406,9 +651,14 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
                       <div className="space-y-2">
                         <Label htmlFor="region" className="text-sm font-medium text-gray-700">
                           Primary Region *
+                          {autoPopulatedFields.includes("region") && (
+                            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                              AI filled
+                            </Badge>
+                          )}
                         </Label>
                         <Select value={formData.region} onValueChange={value => handleInputChange("region", value)}>
-                          <SelectTrigger className="h-12 border-gray-200 focus:border-green-500">
+                          <SelectTrigger className={`h-12 border-gray-200 focus:border-green-500 ${autoPopulatedFields.includes("region") ? "ring-2 ring-green-200 bg-green-50" : ""}`}>
                             <SelectValue placeholder="Select primary region" />
                           </SelectTrigger>
                           <SelectContent>
@@ -593,10 +843,17 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
                           <Brain className="h-5 w-5 text-purple-600 animate-pulse" />
                           <h3 className="text-lg font-semibold text-gray-900">Analyzing Your Requirements</h3>
                         </div>
-                        <p className="text-gray-600">Generating personalized recommendations based on your input</p>
-                        <div className="space-y-2">
-                          <Progress value={analysisProgress} className="w-full h-2" />
-                          <p className="text-sm text-purple-600 font-medium">{analysisProgress}% Complete</p>
+                        <p className="text-gray-600">Our AI is generating personalized recommendations based on your input</p>
+                        <div className="space-y-3">
+                          <Progress value={analysisProgress} className="w-full h-3" />
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-purple-600 font-medium">{analysisProgress}% Complete</p>
+                            {currentAnalysisStep && <p className="text-xs text-gray-500 max-w-xs text-right">{currentAnalysisStep}</p>}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-center space-x-1 text-xs text-gray-400">
+                          <Sparkles className="h-3 w-3" />
+                          <span>Powered by Claude AI</span>
                         </div>
                       </div>
                     </CardContent>
@@ -666,6 +923,127 @@ export const ClientOnboardingModal: React.FC<ClientOnboardingProps> = ({ isVisib
                       </CardContent>
                     </Card>
                   )
+                )}
+
+                {/* Enhanced AI Insights - Key Insights */}
+                {aiRecommendations?.keyInsights && aiRecommendations.keyInsights.length > 0 && (
+                  <Card className="border shadow-sm bg-white mt-6">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg text-gray-900 flex items-center space-x-2">
+                        <Lightbulb className="h-5 w-5 text-amber-600" />
+                        <span>Key Insights</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {aiRecommendations.keyInsights.map((insight, index) => (
+                          <div key={index} className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex items-start space-x-3">
+                              <div className="p-1 bg-amber-100 rounded-full mt-1">
+                                <Star className="h-3 w-3 text-amber-600" />
+                              </div>
+                              <p className="text-sm text-gray-700 leading-relaxed">{insight}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Quick Wins */}
+                {aiRecommendations?.quickWins && aiRecommendations.quickWins.length > 0 && (
+                  <Card className="border shadow-sm bg-white mt-6">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg text-gray-900 flex items-center space-x-2">
+                        <Zap className="h-5 w-5 text-green-600" />
+                        <span>Quick Wins</span>
+                      </CardTitle>
+                      <CardDescription>Immediate opportunities for impact</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {aiRecommendations.quickWins.map((win, index) => (
+                          <div key={index} className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <span className="text-sm text-gray-700">{win}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Risk Factors */}
+                {aiRecommendations?.riskFactors && aiRecommendations.riskFactors.length > 0 && (
+                  <Card className="border shadow-sm bg-white mt-6">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg text-gray-900 flex items-center space-x-2">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        <span>Risk Factors & Mitigation</span>
+                      </CardTitle>
+                      <CardDescription>Key risks to monitor and address</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {aiRecommendations.riskFactors.map((risk, index) => (
+                          <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="p-1 bg-red-100 rounded-full mt-1">
+                              <AlertCircle className="h-3 w-3 text-red-600" />
+                            </div>
+                            <span className="text-sm text-gray-700 leading-relaxed">{risk}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Recommended Approach */}
+                {aiRecommendations?.recommendedApproach && (
+                  <Card className="border shadow-sm bg-white mt-6">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg text-gray-900 flex items-center space-x-2">
+                        <Target className="h-5 w-5 text-blue-600" />
+                        <span>Recommended Approach</span>
+                      </CardTitle>
+                      <CardDescription>Strategic implementation methodology</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="font-medium text-blue-900 mb-2">Phase 1: Foundation</h4>
+                            <p className="text-sm text-gray-700">{aiRecommendations.recommendedApproach.phase1}</p>
+                          </div>
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="font-medium text-blue-900 mb-2">Phase 2: Execution</h4>
+                            <p className="text-sm text-gray-700">{aiRecommendations.recommendedApproach.phase2}</p>
+                          </div>
+                          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="font-medium text-blue-900 mb-2">Phase 3: Optimization</h4>
+                            <p className="text-sm text-gray-700">{aiRecommendations.recommendedApproach.phase3}</p>
+                          </div>
+                        </div>
+
+                        {aiRecommendations.recommendedApproach.criticalSuccessFactors && (
+                          <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                              <Star className="h-4 w-4 text-yellow-500 mr-2" />
+                              Critical Success Factors
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {aiRecommendations.recommendedApproach.criticalSuccessFactors.map((factor, index) => (
+                                <Badge key={index} variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                  {factor}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             )}

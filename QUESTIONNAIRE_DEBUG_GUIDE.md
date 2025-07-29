@@ -234,7 +234,7 @@ window.location.reload();
 // Force success state
 setAnalysisResults({
   estimatedAIAcceleration: 45,
-  estimatedCompletion: "2024-12-31",
+  estimatedCompletion: "2025-12-31",
   hackettMatches: 1200,
   estimatedValue: 2500000,
   recommendations: ["Test recommendation"],

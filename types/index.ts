@@ -65,6 +65,7 @@ export interface WorkflowPhase {
 // Client onboarding data
 export interface ClientOnboarding {
   companyName: string;
+  companyNumber?: string; // New field for company identifier/number
   industry: string;
   revenue: string;
   employees: string;
@@ -74,9 +75,9 @@ export interface ClientOnboarding {
   objectives: string[];
   timeline: string;
   budget: string;
-  maturityLevel?: "basic" | "intermediate" | "advanced";
-  previousTransformations?: boolean;
-  complianceRequirements?: string[];
+  maturityLevel: "basic" | "intermediate" | "advanced";
+  previousTransformations: boolean;
+  complianceRequirements: string[];
 }
 
 // Hackett IP assets

@@ -206,7 +206,7 @@ Content-Type: application/json
 {
   "status": "completed",
   "progress": 100,
-  "estimatedCompletion": "2024-01-15"
+  "estimatedCompletion": "2025-01-15"
 }
 ```
 
@@ -230,7 +230,7 @@ Content-Type: application/json
   "companyId": "company-123",
   "role": "user",
   "content": "What are the next steps for phase 2?",
-  "timestamp": "2024-01-15T10:30:00Z",
+  "timestamp": "2025-01-15T10:30:00Z",
   "relatedPhase": 2
 }
 ```
@@ -284,7 +284,7 @@ Content-Type: application/json
       "expectedOutcomes": ["Cost reduction", "Process efficiency"]
     }
   },
-  "completedAt": "2024-01-15T15:30:00Z"
+  "completedAt": "2025-01-15T15:30:00Z"
 }
 ```
 
@@ -307,7 +307,7 @@ Content-Type: application/json
 {
   "type": "assessment",
   "data": { /* updated questionnaire data */ },
-  "completedAt": "2024-01-16T10:00:00Z"
+  "completedAt": "2025-01-16T10:00:00Z"
 }
 ```
 
@@ -408,7 +408,7 @@ Content-Type: application/json
 
 {
   "sessionData": { /* updated session data */ },
-  "endedAt": "2024-01-15T18:00:00Z"
+  "endedAt": "2025-01-15T18:00:00Z"
 }
 ```
 

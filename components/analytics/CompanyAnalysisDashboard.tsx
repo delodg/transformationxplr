@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Building2,
   TrendingUp,
@@ -26,8 +27,32 @@ import {
   AlertCircle,
   Loader2,
   Brain,
+  Database,
+  Trash2,
 } from "lucide-react";
 import { TransformationProject, AIInsight, WorkflowPhase } from "@/types";
+
+// Global helper function for safe JSON parsing with array validation
+const safeJsonParse = (jsonString: any, fallback: any[] = []): any[] => {
+  try {
+    // If it's already an array, return it
+    if (Array.isArray(jsonString)) {
+      return jsonString;
+    }
+
+    // If it's a string, try to parse it
+    if (typeof jsonString === "string") {
+      const parsed = JSON.parse(jsonString || "[]");
+      return Array.isArray(parsed) ? parsed : fallback;
+    }
+
+    // For any other type, return fallback
+    return fallback;
+  } catch (error) {
+    console.warn("⚠️ JSON parse error:", error, "Input:", jsonString);
+    return fallback;
+  }
+};
 
 interface CompanyAnalysisDashboardProps {
   className?: string;
@@ -48,6 +73,11 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    company: TransformationProject | null;
+    deleting: boolean;
+  }>({ open: false, company: null, deleting: false });
 
   // Fetch companies on component mount and when refreshTrigger changes
   useEffect(() => {
@@ -165,16 +195,6 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
       console.log("🧠 AI Insights found:", data.insights?.length || 0);
       console.log("🔄 Workflow Phases found:", data.phases?.length || 0);
 
-      // **SAFE JSON PARSING HELPER**
-      const safeJsonParse = (jsonString: string, fallback: any[] = []) => {
-        try {
-          return typeof jsonString === "string" ? JSON.parse(jsonString || "[]") : jsonString || fallback;
-        } catch (error) {
-          console.warn("⚠️ JSON parse error:", error, "Input:", jsonString);
-          return fallback;
-        }
-      };
-
       // **CRITICAL FIX**: Ensure insights and phases are properly mapped
       const companyWithInsights: CompanyWithInsights = {
         ...company,
@@ -222,6 +242,45 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
       setError(error instanceof Error ? error.message : "Failed to fetch company details");
     } finally {
       setInsightsLoading(false);
+    }
+  };
+
+  const deleteCompany = async (company: TransformationProject) => {
+    setDeleteDialog(prev => ({ ...prev, deleting: true }));
+
+    try {
+      console.log("🗑️ Deleting company:", company.clientName);
+
+      const response = await fetch(`/api/companies/${company.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Delete company API error:", response.status, errorText);
+        throw new Error(`Failed to delete company: ${response.status} - ${errorText}`);
+      }
+
+      console.log("✅ Company deleted successfully");
+
+      // Update local state
+      setCompanies(prev => prev.filter(c => c.id !== company.id));
+
+      // Clear selected company if it was the deleted one
+      if (selectedCompany?.id === company.id) {
+        setSelectedCompany(null);
+      }
+
+      // Close dialog
+      setDeleteDialog({ open: false, company: null, deleting: false });
+
+      // Notify parent component of data change
+      onDataChange?.();
+    } catch (error) {
+      console.error("❌ Error deleting company:", error);
+      setError(error instanceof Error ? error.message : "Failed to delete company");
+    } finally {
+      setDeleteDialog(prev => ({ ...prev, deleting: false }));
     }
   };
 
@@ -427,27 +486,41 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
                 companies.map(company => (
                   <div
                     key={company.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    className={`p-3 rounded-lg border transition-all group relative ${
                       selectedCompany?.id === company.id ? "border-purple-300 bg-purple-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                     }`}
-                    onClick={() => selectCompany(company)}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{company.clientName}</h3>
-                        <p className="text-sm text-gray-600">{company.industry}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getStatusColor(company.status)} variant="secondary">
-                            {company.status}
-                          </Badge>
-                          <span className="text-xs text-gray-500">Phase {company.currentPhase}</span>
+                    <div className="cursor-pointer" onClick={() => selectCompany(company)}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{company.clientName}</h3>
+                          <p className="text-sm text-gray-600">{company.industry}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge className={getStatusColor(company.status)} variant="secondary">
+                              {company.status}
+                            </Badge>
+                            <span className="text-xs text-gray-500">Phase {company.currentPhase}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">{company.progress}%</div>
+                          <Progress value={company.progress} className="w-16 h-2 mt-1" />
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">{company.progress}%</div>
-                        <Progress value={company.progress} className="w-16 h-2 mt-1" />
-                      </div>
                     </div>
+
+                    {/* Delete Button - appears on hover */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setDeleteDialog({ open: true, company, deleting: false });
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 ))
               )}
@@ -804,13 +877,17 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
                             <div>
                               <h5 className="font-medium text-sm text-gray-900 mb-2">Key Deliverables</h5>
                               <div className="space-y-1">
-                                {phase.deliverables.slice(0, 3).map((deliverable: string, index: number) => (
-                                  <div key={index} className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-                                    <span className="text-sm text-gray-700">{deliverable}</span>
-                                  </div>
-                                ))}
-                                {phase.deliverables.length > 3 && <p className="text-xs text-gray-500 ml-3.5">+{phase.deliverables.length - 3} more deliverables</p>}
+                                {safeJsonParse(phase.deliverables, [])
+                                  .slice(0, 3)
+                                  .map((deliverable: string, index: number) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                                      <span className="text-sm text-gray-700">{deliverable}</span>
+                                    </div>
+                                  ))}
+                                {safeJsonParse(phase.deliverables, []).length > 3 && (
+                                  <p className="text-xs text-gray-500 ml-3.5">+{safeJsonParse(phase.deliverables, []).length - 3} more deliverables</p>
+                                )}
                               </div>
                             </div>
                           )}
@@ -824,6 +901,31 @@ export default function CompanyAnalysisDashboard({ className, refreshTrigger, on
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={open => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>Are you sure you want to delete {deleteDialog.company?.clientName}? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(prev => ({ ...prev, open: false }))} disabled={deleteDialog.deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => deleteDialog.company && deleteCompany(deleteDialog.company)} disabled={deleteDialog.deleting}>
+              {deleteDialog.deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

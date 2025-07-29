@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Zap,
   Brain,
@@ -33,8 +34,43 @@ import {
   Timer,
   RefreshCw,
   ChevronDown,
+  HelpCircle,
+  Rocket,
+  Star,
+  Award,
+  MessageSquare,
+  Workflow,
+  Search,
+  BookOpen,
 } from "lucide-react";
+// Types for UI compatibility
 import { TransformationProject, AIInsight } from "../../types";
+
+// Simple toast notification function
+const showToast = (message: string, type: "success" | "info" | "warning" = "info") => {
+  // Create a simple toast element
+  const toast = document.createElement("div");
+  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all duration-300 ${
+    type === "success" ? "bg-green-600" : type === "warning" ? "bg-yellow-600" : "bg-blue-600"
+  }`;
+  toast.textContent = message;
+  toast.style.transform = "translateX(100%)";
+
+  document.body.appendChild(toast);
+
+  // Animate in
+  setTimeout(() => {
+    toast.style.transform = "translateX(0)";
+  }, 100);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.transform = "translateX(100%)";
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 300);
+  }, 3000);
+};
 
 interface CommandCenterProps {
   currentProject: TransformationProject;
@@ -46,6 +82,10 @@ interface CommandCenterProps {
   onViewAnalytics: () => void;
   onCompanyChange?: (companyKey: string) => void;
   selectedCompany?: string;
+  // New cross-section navigation functions
+  onNavigateToPhase?: (phaseNumber: number) => void;
+  onViewPhaseAnalytics?: (phaseNumber: number) => void;
+  onAccessHackettIP?: (category?: string) => void;
 }
 
 // Company data mapping for the selector
@@ -75,7 +115,13 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onViewAnalytics,
   onCompanyChange,
   selectedCompany = "mastec",
+  onNavigateToPhase,
+  onViewPhaseAnalytics,
+  onAccessHackettIP,
 }) => {
+  // Help modal state
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
   // Memoized calculations for better performance
   const formatCurrency = useCallback((value: number) => {
     // Use a deterministic formatting to avoid hydration mismatches
@@ -156,7 +202,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     const startDate = new Date(currentProject.startDate);
     const endDate = new Date(currentProject.estimatedCompletion);
     // Use a fixed date for consistent server/client rendering (demo mode)
-    const currentDate = new Date("2024-01-15T00:00:00Z");
+    const currentDate = new Date("2025-01-15T00:00:00Z");
 
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const elapsedDays = Math.ceil((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -600,6 +646,460 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Enhanced Phase Navigation Quick Actions */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+          <Target className="h-5 w-5" />
+          Quick Phase Navigation
+        </h3>
+
+        {/* Enhanced Phase Grid with Status Indicators */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7].map(phaseNum => {
+            const isCurrentPhase = currentProject.currentPhase === phaseNum;
+            const isCompleted = currentProject.currentPhase > phaseNum;
+            const isPending = currentProject.currentPhase < phaseNum;
+
+            return (
+              <Button
+                key={phaseNum}
+                variant={isCurrentPhase ? "default" : "secondary"}
+                size="sm"
+                className={`
+                  relative min-h-[60px] flex flex-col items-center justify-center p-3 transition-all duration-200
+                  ${
+                    isCurrentPhase
+                      ? "bg-white text-purple-600 border-white shadow-lg ring-2 ring-white/50 transform scale-105"
+                      : isCompleted
+                      ? "bg-green-600/80 text-white border-green-500/50 hover:bg-green-600"
+                      : isPending
+                      ? "bg-white/10 text-white/70 border-white/20 hover:bg-white/20 hover:text-white"
+                      : "bg-white/20 text-white border-white/30 hover:bg-white/30"
+                  }
+                  hover:transform hover:scale-102 hover:shadow-lg
+                  focus:ring-2 focus:ring-white/50 focus:outline-none
+                `}
+                onClick={() => {
+                  console.log(`🚀 Phase Navigation: Attempting to navigate to Phase ${phaseNum}`);
+                  console.log("Current project:", currentProject);
+                  console.log("onNavigateToPhase callback:", onNavigateToPhase);
+
+                  if (!onNavigateToPhase) {
+                    console.error("❌ onNavigateToPhase callback is not defined!");
+                    showToast("Navigation error: Callback not defined", "warning");
+                    return;
+                  }
+
+                  onNavigateToPhase(phaseNum);
+                  showToast(`Navigated to Phase ${phaseNum}`, "success");
+                  console.log(`✅ Navigation to Phase ${phaseNum} triggered successfully`);
+                }}
+              >
+                {/* Phase Status Icon */}
+                <div className="flex items-center justify-center mb-1">
+                  {isCompleted ? <CheckCircle className="h-4 w-4" /> : isCurrentPhase ? <Activity className="h-4 w-4 animate-pulse" /> : <Target className="h-4 w-4" />}
+                </div>
+
+                {/* Phase Number and Label */}
+                <div className="text-xs font-semibold">Phase {phaseNum}</div>
+
+                {/* Status Badge */}
+                {isCurrentPhase && <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>}
+                {isCompleted && <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full"></div>}
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Phase Legend */}
+        <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-white/80">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+            <span>Completed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+            <span>Current Phase</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-white/30 rounded-full"></div>
+            <span>Upcoming</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Analytics and IP Access */}
+      <div className="mt-8">
+        <h4 className="text-base font-medium text-white mb-4 flex items-center gap-2">
+          <Sparkles className="h-4 w-4" />
+          Quick Actions
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30 hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-200 min-h-[50px]"
+            onClick={() => {
+              console.log(`📊 Analytics Navigation: Attempting to view analytics for Phase ${currentProject.currentPhase}`);
+              console.log("onViewPhaseAnalytics callback:", onViewPhaseAnalytics);
+
+              if (!onViewPhaseAnalytics) {
+                console.error("❌ onViewPhaseAnalytics callback is not defined!");
+                showToast("Analytics navigation error: Callback not defined", "warning");
+                return;
+              }
+
+              onViewPhaseAnalytics(currentProject.currentPhase);
+              showToast(`Viewing Phase ${currentProject.currentPhase} Analytics`, "success");
+              console.log(`✅ Analytics navigation triggered successfully`);
+            }}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <BarChart3 className="h-4 w-4" />
+              <span className="text-xs">Phase Analytics</span>
+            </div>
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white border-white/30 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 min-h-[50px]"
+            onClick={() => {
+              console.log(`📚 Hackett IP Navigation: Attempting to access Hackett IP Library`);
+              console.log("onAccessHackettIP callback:", onAccessHackettIP);
+
+              if (!onAccessHackettIP) {
+                console.error("❌ onAccessHackettIP callback is not defined!");
+                showToast("Hackett IP navigation error: Callback not defined", "warning");
+                return;
+              }
+
+              onAccessHackettIP("Finance Transformation");
+              showToast("Accessing Hackett IP Library", "success");
+              console.log(`✅ Hackett IP navigation triggered successfully`);
+            }}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Database className="h-4 w-4" />
+              <span className="text-xs">Hackett IP Library</span>
+            </div>
+          </Button>
+        </div>
+
+        {/* Additional Help Action */}
+        <div className="mt-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full bg-gradient-to-r from-orange-500/20 to-red-500/20 text-white border-white/30 hover:from-orange-500/30 hover:to-red-500/30 transition-all duration-200 min-h-[50px]"
+            onClick={() => {
+              console.log("📖 Opening Help Modal");
+              setShowHelpModal(true);
+              showToast("Opening User Guide", "info");
+            }}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <HelpCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Help & User Guide</span>
+              <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
+                New
+              </Badge>
+            </div>
+          </Button>
+        </div>
+      </div>
+
+      {/* Help Modal */}
+      <Dialog open={showHelpModal} onOpenChange={setShowHelpModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <HelpCircle className="h-6 w-6 text-purple-600" />
+              Transformation XPLR - User Guide
+            </DialogTitle>
+            <DialogDescription className="text-base">Your complete guide to accelerating finance transformation with AI-powered insights</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-8 py-4">
+            {/* Overview Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-purple-600">
+                <Rocket className="h-5 w-5" />
+                What You'll Achieve
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">50% Faster Delivery</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Complete finance transformation projects in half the time with AI-powered automation</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Database className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">1,247+ Hackett IP Assets</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Access to comprehensive intellectual property and proven methodologies</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Brain className="h-4 w-4 text-purple-600" />
+                      <span className="font-medium">AI-Powered Analysis</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Intelligent insights, automated documentation, and smart recommendations</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Award className="h-4 w-4 text-orange-600" />
+                      <span className="font-medium">Professional Deliverables</span>
+                    </div>
+                    <p className="text-sm text-gray-600">Export presentation-ready documents and comprehensive project reports</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* 7-Phase Journey */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-purple-600">
+                <Workflow className="h-5 w-5" />
+                7-Phase Transformation Journey
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  {
+                    phase: 1,
+                    title: "Project Initiation & Setup",
+                    description: "AI-powered client onboarding, engagement setup, and team configuration",
+                    features: ["Smart company data population", "Automated requirements analysis", "Team role assignment"],
+                  },
+                  {
+                    phase: 2,
+                    title: "Parallel Workstream Management",
+                    description: "Coordinated data collection across multiple streams with AI assistance",
+                    features: ["Executive interviews", "Stakeholder surveys", "Benchmark data collection"],
+                  },
+                  {
+                    phase: 3,
+                    title: "AI-Powered Synthesis & Analysis",
+                    description: "Intelligent data triangulation and gap analysis with automated insights",
+                    features: ["Multi-source data integration", "AI-driven pattern recognition", "Target operating model definition"],
+                  },
+                  {
+                    phase: 4,
+                    title: "Initiative Identification & Prioritization",
+                    description: "Smart recommendations with ROI calculations and value quantification",
+                    features: ["AI-generated initiatives", "Automated ROI calculations", "Intelligent prioritization"],
+                  },
+                  {
+                    phase: 5,
+                    title: "Roadmap Development",
+                    description: "Dynamic roadmap construction with dependency management",
+                    features: ["Interactive Gantt charts", "Resource allocation", "Business case preparation"],
+                  },
+                  {
+                    phase: 6,
+                    title: "Client Review & Handover",
+                    description: "Interactive presentations and collaborative solution finalization",
+                    features: ["Professional deliverable export", "Client collaboration tools", "Solution validation"],
+                  },
+                  {
+                    phase: 7,
+                    title: "Implementation Tracking",
+                    description: "Progress monitoring and benefits realization tracking",
+                    features: ["Real-time progress updates", "Success metrics reporting", "Continuous optimization"],
+                  },
+                ].map(phase => (
+                  <Card key={phase.phase} className="border-l-4 border-l-purple-500">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-purple-600">{phase.phase}</span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{phase.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{phase.description}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {phase.features.map((feature, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {feature}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Navigation Guide */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-purple-600">
+                <Search className="h-5 w-5" />
+                How to Navigate
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Target className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">Command Center</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Your project overview and quick navigation hub</p>
+                    <ul className="text-xs text-gray-500 space-y-1">
+                      <li>• View project status and key metrics</li>
+                      <li>• Access quick phase navigation</li>
+                      <li>• Launch AI assistant and analytics</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Workflow className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">7-Phase Workflow</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Detailed phase management and execution</p>
+                    <ul className="text-xs text-gray-500 space-y-1">
+                      <li>• Track progress through each phase</li>
+                      <li>• Access deliverables and milestones</li>
+                      <li>• Generate AI analysis and insights</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="h-4 w-4 text-purple-600" />
+                      <span className="font-medium">Analytics Dashboard</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Comprehensive project insights and reporting</p>
+                    <ul className="text-xs text-gray-500 space-y-1">
+                      <li>• View detailed company analysis</li>
+                      <li>• Track phase completion metrics</li>
+                      <li>• Export reports and presentations</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="h-4 w-4 text-orange-600" />
+                      <span className="font-medium">Hackett IP Library</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Access comprehensive intellectual property</p>
+                    <ul className="text-xs text-gray-500 space-y-1">
+                      <li>• Browse 1,247+ proven methodologies</li>
+                      <li>• Filter by industry and phase</li>
+                      <li>• Get personalized recommendations</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* AI Features */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-purple-600">
+                <Brain className="h-5 w-5" />
+                AI-Powered Features
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-gradient-to-br from-blue-50 to-purple-50">
+                  <CardContent className="p-4">
+                    <Lightbulb className="h-8 w-8 text-blue-600 mb-2" />
+                    <h4 className="font-semibold mb-2">Smart Insights</h4>
+                    <p className="text-sm text-gray-600">AI analyzes your data to provide contextual recommendations and identify opportunities</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-green-50 to-blue-50">
+                  <CardContent className="p-4">
+                    <MessageSquare className="h-8 w-8 text-green-600 mb-2" />
+                    <h4 className="font-semibold mb-2">AI Assistant</h4>
+                    <p className="text-sm text-gray-600">Get instant help and guidance throughout your transformation journey</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
+                  <CardContent className="p-4">
+                    <FileText className="h-8 w-8 text-purple-600 mb-2" />
+                    <h4 className="font-semibold mb-2">Auto Documentation</h4>
+                    <p className="text-sm text-gray-600">Automatically generate professional reports and presentations</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Getting Started */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-purple-600">
+                <Star className="h-5 w-5" />
+                Getting Started
+              </div>
+
+              <Card className="bg-gradient-to-r from-purple-100 to-blue-100">
+                <CardContent className="p-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                      <span className="font-medium">Create a new project using the "New Project" button</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                      <span className="font-medium">Complete the AI-powered client onboarding process</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                      <span className="font-medium">Navigate through the 7-phase workflow with AI guidance</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                      <span className="font-medium">Use analytics and Hackett IP for enhanced insights</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowHelpModal(false)}>
+              Close Guide
+            </Button>
+            <Button
+              onClick={() => {
+                setShowHelpModal(false);
+                onNewProject();
+              }}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Start New Project
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

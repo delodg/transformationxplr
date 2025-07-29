@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,9 +48,44 @@ import {
   AlertCircle,
   Circle,
   Loader2,
+  Database,
+  ExternalLink,
 } from "lucide-react";
 import { WorkflowPhase } from "../../types";
 import { PHASE_COLORS } from "../../constants/workflowData";
+
+// Safe JSON parsing helper - ensures we always get an array
+const safeJsonParse = (value: any, fallback: any[] = []): any[] => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+};
+
+interface HackettIPAsset {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  type: "template" | "framework" | "benchmark" | "process" | "methodology" | "tool";
+  relevanceScore: number;
+  industry: string[];
+  phase: number[];
+  tags: string[];
+  estimatedTimeToValue: string;
+  complexity: "low" | "medium" | "high";
+  lastUpdated: string;
+  previewAvailable: boolean;
+}
 
 interface WorkflowPhasesProps {
   phases: WorkflowPhase[];
@@ -60,9 +95,28 @@ interface WorkflowPhasesProps {
   onPhaseStateChange?: (phaseId: number, newStatus: WorkflowPhase["status"], newProgress?: number) => void;
   onAIAssistantOpen?: (action: string, context: any) => void;
   onGenerateAI?: () => Promise<void>; // New callback for AI analysis generation
+  // New cross-section navigation and phase management functions
+  onPhaseProgress?: (phaseId: number, newProgress: number) => void;
+  onPhaseCompletion?: (phaseId: number) => void;
+  onViewAnalytics?: (phaseNumber: number) => void;
+  onAccessHackettIP?: (category?: string) => void;
+  insights?: any; // Added insights prop
 }
 
-export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentPhase, onPhaseSelect, onViewDetails, onPhaseStateChange, onAIAssistantOpen, onGenerateAI }) => {
+export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
+  phases,
+  currentPhase,
+  onPhaseSelect,
+  onViewDetails,
+  onPhaseStateChange,
+  onAIAssistantOpen,
+  onGenerateAI,
+  onPhaseProgress,
+  onPhaseCompletion,
+  onViewAnalytics,
+  onAccessHackettIP,
+  insights,
+}) => {
   const [selectedPhaseId, setSelectedPhaseId] = useState<number>(currentPhase);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,6 +129,8 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
     action: () => void;
     type: "destructive" | "default";
   }>({ open: false, title: "", description: "", action: () => {}, type: "default" });
+  const [phaseAssets, setPhaseAssets] = useState<Record<number, HackettIPAsset[]>>({});
+  const [loadingAssets, setLoadingAssets] = useState<Record<number, boolean>>({});
 
   // Enhanced status functions
   const getStatusIcon = useCallback((status: WorkflowPhase["status"]) => {
@@ -339,35 +395,35 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
 
         switch (contentType) {
           case "deliverables":
-            action = `Enhance Phase ${phaseId} deliverables for ${phase.title}. Current deliverables: ${phase.deliverables.join(
+            action = `Enhance Phase ${phaseId} deliverables for ${phase.title}. Current deliverables: ${safeJsonParse(phase.deliverables).join(
               ", "
             )}. Provide detailed descriptions, quality criteria, and success metrics for each deliverable.`;
-            context.currentContent = { deliverables: phase.deliverables };
+            context.currentContent = { deliverables: safeJsonParse(phase.deliverables) };
             break;
           case "activities":
-            action = `Optimize Phase ${phaseId} key activities for ${phase.title}. Current activities: ${phase.keyActivities.join(
+            action = `Optimize Phase ${phaseId} key activities for ${phase.title}. Current activities: ${safeJsonParse(phase.keyActivities).join(
               ", "
             )}. Suggest improvements, automation opportunities, and best practices.`;
-            context.currentContent = { activities: phase.keyActivities };
+            context.currentContent = { activities: safeJsonParse(phase.keyActivities) };
             break;
           case "risks":
             action = `Analyze and expand Phase ${phaseId} risk assessment for ${phase.title}. Current risks: ${
-              phase.riskFactors?.join(", ") || "No risks identified"
+              safeJsonParse(phase.riskFactors).join(", ") || "No risks identified"
             }. Provide detailed risk analysis with mitigation strategies and contingency plans.`;
-            context.currentContent = { risks: phase.riskFactors };
+            context.currentContent = { risks: safeJsonParse(phase.riskFactors) };
             break;
           case "success-criteria":
             action = `Refine Phase ${phaseId} success criteria for ${phase.title}. Current criteria: ${
-              phase.successMetrics?.join(", ") || "No metrics defined"
+              safeJsonParse(phase.successMetrics).join(", ") || "No metrics defined"
             }. Make them SMART (Specific, Measurable, Achievable, Relevant, Time-bound).`;
-            context.currentContent = { successCriteria: phase.successMetrics };
+            context.currentContent = { successCriteria: safeJsonParse(phase.successMetrics) };
             break;
           case "optimization":
             action = `Provide comprehensive optimization recommendations for Phase ${phaseId}: ${phase.title}. Analyze timeline (${phase.duration}), deliverables, activities, and team requirements. Suggest AI acceleration opportunities.`;
             context.currentContent = {
               timeline: phase.duration,
-              deliverables: phase.deliverables,
-              activities: phase.keyActivities,
+              deliverables: safeJsonParse(phase.deliverables),
+              activities: safeJsonParse(phase.keyActivities),
               status: phase.status,
               progress: phase.progress,
             };
@@ -391,10 +447,14 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
       - Current Progress: ${Math.round(phase.progress)}% complete
       - Status: ${phase.status}
       - Timeline: ${phase.duration}
-      - Completed Deliverables: ${phase.deliverables.filter((_, i) => i < Math.floor((phase.progress / 100) * phase.deliverables.length)).join(", ")}
-      - Pending Activities: ${phase.keyActivities.filter((_, i) => i >= Math.floor((phase.progress / 100) * phase.keyActivities.length)).join(", ")}
-      - Risk Status: ${phase.riskFactors?.join(", ") || "No risks identified"}
-      - Team Performance: Based on ${phase.teamRole.length} role assignments
+      - Completed Deliverables: ${safeJsonParse(phase.deliverables)
+        .filter((_, i) => i < Math.floor((phase.progress / 100) * safeJsonParse(phase.deliverables).length))
+        .join(", ")}
+      - Pending Activities: ${safeJsonParse(phase.keyActivities)
+        .filter((_, i) => i >= Math.floor((phase.progress / 100) * safeJsonParse(phase.keyActivities).length))
+        .join(", ")}
+      - Risk Status: ${safeJsonParse(phase.riskFactors).join(", ") || "No risks identified"}
+      - Team Performance: Based on ${safeJsonParse(phase.teamRole).length} role assignments
       
       Format as an executive summary with next steps and recommendations.`;
 
@@ -513,6 +573,34 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
       alert(`Failed to generate AI analysis: ${error}`);
     }
   };
+
+  // Function to load Hackett IP assets for a specific phase
+  const loadPhaseAssets = async (phaseNumber: number) => {
+    if (phaseAssets[phaseNumber] || loadingAssets[phaseNumber]) return;
+
+    setLoadingAssets(prev => ({ ...prev, [phaseNumber]: true }));
+
+    try {
+      const response = await fetch(`/api/hackett-ip?phase=${phaseNumber}&limit=6`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setPhaseAssets(prev => ({ ...prev, [phaseNumber]: result.data }));
+        }
+      }
+    } catch (error) {
+      console.error(`Error loading assets for phase ${phaseNumber}:`, error);
+    } finally {
+      setLoadingAssets(prev => ({ ...prev, [phaseNumber]: false }));
+    }
+  };
+
+  // Load assets when a phase is selected
+  useEffect(() => {
+    if (selectedPhase) {
+      loadPhaseAssets(selectedPhase.id);
+    }
+  }, [selectedPhase]);
 
   return (
     <div className="space-y-8">
@@ -860,8 +948,8 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                                         <span>{phase.duration}</span>
                                       </div>
                                       <div className="flex items-center space-x-3">
-                                        <span>{phase.deliverables?.length || 0} deliverables</span>
-                                        <span>{phase.keyActivities?.length || 0} activities</span>
+                                        <span>{safeJsonParse(phase.deliverables).length} deliverables</span>
+                                        <span>{safeJsonParse(phase.keyActivities).length} activities</span>
                                       </div>
                                     </div>
                                   </div>
@@ -874,6 +962,42 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                               </div>
                             </div>
                           </CardContent>
+
+                          {/* Cross-Section Integration Toolbar */}
+                          <div className="px-6 pb-4">
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                              <div className="flex items-center space-x-2 text-xs text-gray-600">
+                                <Target className="h-3 w-3" />
+                                <span>Phase {phase.id} Integration</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    onViewAnalytics?.(phase.id);
+                                  }}
+                                >
+                                  <BarChart3 className="h-3 w-3 mr-1" />
+                                  Analytics
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    onAccessHackettIP?.(`Phase ${phase.id} Resources`);
+                                  }}
+                                >
+                                  <Database className="h-3 w-3 mr-1" />
+                                  IP Assets
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
                         </Card>
                       </div>
                     );
@@ -962,14 +1086,14 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-2xl font-bold text-green-600">{selectedPhase.deliverables?.length || 0}</div>
+                            <div className="text-2xl font-bold text-green-600">{safeJsonParse(selectedPhase.deliverables).length}</div>
                             <div className="text-sm text-gray-600">Deliverables</div>
                           </div>
                           <Target className="h-8 w-8 text-green-500" />
                         </div>
                         <div className="mt-2 flex items-center space-x-1">
                           <CheckCircle className="h-3 w-3 text-green-400" />
-                          <span className="text-xs text-gray-500">{selectedPhase.keyActivities?.length || 0} activities</span>
+                          <span className="text-xs text-gray-500">{safeJsonParse(selectedPhase.keyActivities).length} activities</span>
                         </div>
                       </div>
                     </div>
@@ -997,59 +1121,96 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                       </CardContent>
                     </Card>
 
-                    {/* Hackett IP Assets */}
-                    <Card>
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold mb-3 flex items-center space-x-2">
-                          <Brain className="h-4 w-4 text-purple-600" />
-                          <span>Hackett IP Assets ({selectedPhase.hackettIP?.length || 0})</span>
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {selectedPhase.hackettIP?.slice(0, 6).map((asset, index) => (
-                            <div key={index} className="flex items-center space-x-3 p-2 bg-purple-50 rounded-lg border border-purple-100">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-                              <span className="text-sm text-gray-700">{asset}</span>
+                    {/* Deliverables */}
+                    <div>
+                      <h4 className="font-semibold text-sm text-gray-900 mb-3 flex items-center gap-2">
+                        <Target className="h-4 w-4 text-blue-600" />
+                        Deliverables ({safeJsonParse(selectedPhase.deliverables).length})
+                      </h4>
+                      <div className="space-y-2">
+                        {safeJsonParse(selectedPhase.deliverables)
+                          .slice(0, 3)
+                          .map((deliverable: string, index: number) => (
+                            <div key={index} className="flex items-start gap-2 p-2 bg-blue-50 rounded-lg">
+                              <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-gray-700">{deliverable}</span>
                             </div>
                           ))}
-                          {selectedPhase.hackettIP && selectedPhase.hackettIP.length > 6 && (
-                            <div className="text-xs text-gray-500 mt-2 text-center">+{selectedPhase.hackettIP.length - 6} more IP assets available</div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
+                        {safeJsonParse(selectedPhase.deliverables).length > 3 && (
+                          <div className="text-xs text-gray-500 mt-2">+{safeJsonParse(selectedPhase.deliverables).length - 3} more deliverables</div>
+                        )}
+                      </div>
+                    </div>
 
-                  <TabsContent value="deliverables" className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3">
-                      {selectedPhase.deliverables?.map((deliverable, index) => (
-                        <Card key={index} className="border-l-4 border-l-green-500">
-                          <CardContent className="p-4">
-                            <div className="flex items-start space-x-3">
-                              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1">
-                                <h5 className="font-medium text-gray-900 mb-1">Deliverable {index + 1}</h5>
-                                <p className="text-sm text-gray-700">{deliverable}</p>
-                                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                  <div className="flex items-center space-x-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>Due: Week {index + 1}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-1">
-                                    <Users className="h-3 w-3" />
-                                    <span>Owner: Project Team</span>
-                                  </div>
+                    {/* Hackett IP Assets Section */}
+                    <div className="mt-6 border-t pt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                          <Database className="h-4 w-4 text-purple-600" />
+                          Recommended Hackett IP Assets
+                        </h4>
+                        <Button variant="outline" size="sm" onClick={() => onAccessHackettIP?.()}>
+                          <ExternalLink className="h-3 w-3 mr-2" />
+                          View All Assets
+                        </Button>
+                      </div>
+
+                      {loadingAssets[selectedPhase.id] ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="animate-pulse bg-gray-50 rounded-lg p-3">
+                              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                              <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
+                              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : phaseAssets[selectedPhase.id] && phaseAssets[selectedPhase.id].length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {phaseAssets[selectedPhase.id].slice(0, 4).map((asset: HackettIPAsset) => (
+                            <div key={asset.id} className="bg-purple-50 rounded-lg p-3 border border-purple-200 hover:border-purple-300 transition-colors">
+                              <div className="flex items-start justify-between mb-2">
+                                <h5 className="font-medium text-sm text-gray-900 leading-tight">{asset.title}</h5>
+                                <Badge variant="outline" className="text-xs ml-2 flex-shrink-0">
+                                  {asset.relevanceScore}%
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-600 mb-2 line-clamp-2">{asset.description}</p>
+                              <div className="flex items-center justify-between">
+                                <div className="flex gap-1">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {asset.type}
+                                  </Badge>
+                                  <Badge
+                                    className={`text-xs ${
+                                      asset.complexity === "low" ? "bg-green-100 text-green-800" : asset.complexity === "medium" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {asset.complexity}
+                                  </Badge>
                                 </div>
+                                <Button variant="ghost" size="sm" className="h-auto p-1 text-xs">
+                                  <Download className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 bg-gray-50 rounded-lg">
+                          <Database className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600">No assets loaded yet</p>
+                          <Button variant="outline" size="sm" className="mt-2" onClick={() => loadPhaseAssets(selectedPhase.id)}>
+                            Load Recommendations
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
 
                   <TabsContent value="activities" className="space-y-4">
                     <div className="grid grid-cols-1 gap-3">
-                      {selectedPhase.keyActivities?.map((activity, index) => (
+                      {safeJsonParse(selectedPhase.keyActivities).map((activity, index) => (
                         <Card key={index} className="border-l-4 border-l-blue-500">
                           <CardContent className="p-4">
                             <div className="flex items-start space-x-3">
@@ -1089,7 +1250,7 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {selectedPhase.teamRole?.map((role, index) => (
+                            {safeJsonParse(selectedPhase.teamRole).map((role, index) => (
                               <div key={index} className="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                 <span className="text-sm">{role}</span>
@@ -1108,7 +1269,7 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {selectedPhase.clientTasks?.map((task, index) => (
+                            {safeJsonParse(selectedPhase.clientTasks).map((task, index) => (
                               <div key={index} className="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <span className="text-sm">{task}</span>
@@ -1130,9 +1291,9 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {selectedPhase.successMetrics ? (
+                          {safeJsonParse(selectedPhase.successMetrics).length > 0 ? (
                             <div className="space-y-3">
-                              {selectedPhase.successMetrics.map((metric, index) => (
+                              {safeJsonParse(selectedPhase.successMetrics).map((metric, index) => (
                                 <div key={index} className="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                   <span className="text-sm">{metric}</span>
@@ -1153,9 +1314,9 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({ phases, currentP
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {selectedPhase.riskFactors && selectedPhase.riskFactors.length > 0 ? (
+                          {safeJsonParse(selectedPhase.riskFactors).length > 0 ? (
                             <div className="space-y-3">
-                              {selectedPhase.riskFactors.map((risk, index) => (
+                              {safeJsonParse(selectedPhase.riskFactors).map((risk, index) => (
                                 <div key={index} className="flex items-center space-x-3 p-2 bg-red-50 rounded-lg">
                                   <AlertTriangle className="h-4 w-4 text-red-500" />
                                   <span className="text-sm">{risk}</span>

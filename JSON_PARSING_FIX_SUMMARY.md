@@ -87,7 +87,7 @@ Instead of throwing errors, the system now gracefully falls back to mock data:
 // Use fallback mock data instead of throwing
 analysis = {
   estimatedAIAcceleration: 35,
-  estimatedCompletion: "2024-12-31",
+  estimatedCompletion: "2025-12-31",
   hackettMatches: 800,
   estimatedValue: 1800000,
   insights: [

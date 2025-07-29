@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getCompaniesByUser, getAIInsightsByCompany, getWorkflowPhasesByCompany } from "@/lib/db/services";
+import { db } from "@/lib/db";
+import { companies } from "@/lib/db/schema";
 
 export async function POST(request: NextRequest) {
   try {
