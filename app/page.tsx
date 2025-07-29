@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, Workflow, BarChart3, Database, CheckCircle, AlertCircle, TrendingUp, Zap, Brain, Lightbulb, Users, Plus } from "lucide-react";
+import { Target, Workflow, BarChart3, Database, CheckCircle, AlertCircle, TrendingUp, Zap, Brain, Lightbulb, Users, Plus, HelpCircle } from "lucide-react";
 
 import { CommandCenter } from "../components/workflow/CommandCenter";
 import { WorkflowPhases } from "../components/workflow/WorkflowPhases";
@@ -634,9 +634,16 @@ const TransformationXPLR: React.FC = () => {
             <p className="text-gray-600 mt-1">Manage your transformation projects and track progress</p>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm" onClick={() => handleStartTour("ai-assistant")}>
-              <Lightbulb className="h-4 w-4 mr-2" />
-              Help
+            <Button variant="outline" size="sm" onClick={() => {
+              // Trigger the CommandCenter help modal
+              if ((window as any).showHelpModal) {
+                (window as any).showHelpModal();
+              } else {
+                handleStartTour("ai-assistant");
+              }
+            }}>
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Help & User Guide
             </Button>
             <Button onClick={handleNewProject} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -698,6 +705,7 @@ const TransformationXPLR: React.FC = () => {
                   onNavigateToPhase={handleNavigateToPhase}
                   onViewPhaseAnalytics={handleViewPhaseAnalytics}
                   onAccessHackettIP={handleAccessHackettIP}
+                  onShowHelp={() => {}} // Enable help modal functionality
                 />
               </div>
             </TabsContent>

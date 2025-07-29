@@ -47,13 +47,13 @@ async function generateAdvancedIntelligence(companyProfile: any, analysisType: s
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514", // Updated to Claude Sonnet 4
       max_tokens: 3000,
       temperature: 0.8,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const content = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    const content = response.content[0]?.type === "text" ? response.content[0].text : "";
     return parseIntelligenceResponse(content, analysisType);
   } catch (claudeError) {
     console.warn("⚠️ Claude API error, using sophisticated fallback");

@@ -86,6 +86,8 @@ interface CommandCenterProps {
   onNavigateToPhase?: (phaseNumber: number) => void;
   onViewPhaseAnalytics?: (phaseNumber: number) => void;
   onAccessHackettIP?: (category?: string) => void;
+  // Help modal trigger
+  onShowHelp?: () => void;
 }
 
 // Company data mapping for the selector
@@ -118,9 +120,21 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onNavigateToPhase,
   onViewPhaseAnalytics,
   onAccessHackettIP,
+  onShowHelp,
 }) => {
   // Help modal state
   const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Expose help modal functionality to parent
+  React.useEffect(() => {
+    if (onShowHelp) {
+      // Replace the onShowHelp with our modal trigger
+      (window as any).showHelpModal = () => {
+        setShowHelpModal(true);
+        showToast("Opening User Guide", "info");
+      };
+    }
+  }, [onShowHelp]);
 
   // Memoized calculations for better performance
   const formatCurrency = useCallback((value: number) => {
@@ -647,84 +661,199 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         </div>
       </div>
 
-      {/* Enhanced Phase Navigation Quick Actions */}
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          Quick Phase Navigation
-        </h3>
-
-        {/* Enhanced Phase Grid with Status Indicators */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-          {[1, 2, 3, 4, 5, 6, 7].map(phaseNum => {
-            const isCurrentPhase = currentProject.currentPhase === phaseNum;
-            const isCompleted = currentProject.currentPhase > phaseNum;
-            const isPending = currentProject.currentPhase < phaseNum;
-
-            return (
-              <Button
-                key={phaseNum}
-                variant={isCurrentPhase ? "default" : "secondary"}
-                size="sm"
-                className={`
-                  relative min-h-[60px] flex flex-col items-center justify-center p-3 transition-all duration-200
-                  ${
-                    isCurrentPhase
-                      ? "bg-white text-purple-600 border-white shadow-lg ring-2 ring-white/50 transform scale-105"
-                      : isCompleted
-                      ? "bg-green-600/80 text-white border-green-500/50 hover:bg-green-600"
-                      : isPending
-                      ? "bg-white/10 text-white/70 border-white/20 hover:bg-white/20 hover:text-white"
-                      : "bg-white/20 text-white border-white/30 hover:bg-white/30"
-                  }
-                  hover:transform hover:scale-102 hover:shadow-lg
-                  focus:ring-2 focus:ring-white/50 focus:outline-none
-                `}
-                onClick={() => {
-                  console.log(`🚀 Phase Navigation: Attempting to navigate to Phase ${phaseNum}`);
-                  console.log("Current project:", currentProject);
-                  console.log("onNavigateToPhase callback:", onNavigateToPhase);
-
-                  if (!onNavigateToPhase) {
-                    console.error("❌ onNavigateToPhase callback is not defined!");
-                    showToast("Navigation error: Callback not defined", "warning");
-                    return;
-                  }
-
-                  onNavigateToPhase(phaseNum);
-                  showToast(`Navigated to Phase ${phaseNum}`, "success");
-                  console.log(`✅ Navigation to Phase ${phaseNum} triggered successfully`);
-                }}
-              >
-                {/* Phase Status Icon */}
-                <div className="flex items-center justify-center mb-1">
-                  {isCompleted ? <CheckCircle className="h-4 w-4" /> : isCurrentPhase ? <Activity className="h-4 w-4 animate-pulse" /> : <Target className="h-4 w-4" />}
+      {/* Enhanced Phase Navigation - Using AI-Powered Insights Styling */}
+      <div className="analytics-chart-card mt-8">
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="analytics-title text-xl mb-2 flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Target className="h-5 w-5 text-blue-600" />
                 </div>
-
-                {/* Phase Number and Label */}
-                <div className="text-xs font-semibold">Phase {phaseNum}</div>
-
-                {/* Status Badge */}
-                {isCurrentPhase && <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>}
-                {isCompleted && <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full"></div>}
-              </Button>
-            );
-          })}
+                <span>Quick Phase Navigation</span>
+              </h3>
+              <p className="analytics-subtitle">Navigate directly to any phase of your transformation journey</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                Phase {currentProject.currentPhase}/7
+              </Badge>
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                {[1, 2, 3, 4, 5, 6, 7].filter(p => currentProject.currentPhase > p).length} Completed
+              </Badge>
+            </div>
+          </div>
         </div>
 
-        {/* Phase Legend */}
-        <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-white/80">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-            <span>Completed</span>
+        <div className="p-6">
+          {/* Enhanced Phase Grid with Better Styling */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7].map(phaseNum => {
+              const isCurrentPhase = currentProject.currentPhase === phaseNum;
+              const isCompleted = currentProject.currentPhase > phaseNum;
+              const isPending = currentProject.currentPhase < phaseNum;
+
+              return (
+                <div
+                  key={phaseNum}
+                  className={`
+                    analytics-metric-card p-4 cursor-pointer transition-all duration-200 hover:scale-105 relative
+                    ${isCurrentPhase ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                    ${isCompleted ? 'bg-green-50 border-green-200' : ''}
+                    ${isPending ? 'bg-gray-50 border-gray-200' : ''}
+                  `}
+                  onClick={() => {
+                    console.log(`🚀 Phase Navigation: Attempting to navigate to Phase ${phaseNum}`);
+                    console.log("Current project:", currentProject);
+                    console.log("onNavigateToPhase callback:", onNavigateToPhase);
+
+                    if (!onNavigateToPhase) {
+                      console.error("❌ onNavigateToPhase callback is not defined!");
+                      showToast("Navigation error: Callback not defined", "warning");
+                      return;
+                    }
+
+                    onNavigateToPhase(phaseNum);
+                    showToast(`Navigated to Phase ${phaseNum}`, "success");
+                    console.log(`✅ Navigation to Phase ${phaseNum} triggered successfully`);
+                  }}
+                >
+                  {/* Status Badge */}
+                  {isCurrentPhase && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  )}
+                  {isCompleted && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+                  )}
+
+                  {/* Phase Icon */}
+                  <div className="flex items-center justify-center mb-3">
+                    <div
+                      className={`
+                        w-12 h-12 rounded-lg flex items-center justify-center font-bold text-white shadow-sm
+                        ${isCurrentPhase ? 'bg-blue-600' : ''}
+                        ${isCompleted ? 'bg-green-600' : ''}
+                        ${isPending ? 'bg-gray-400' : ''}
+                      `}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="h-6 w-6" />
+                      ) : isCurrentPhase ? (
+                        <Activity className="h-6 w-6 animate-pulse" />
+                      ) : (
+                        <span className="text-lg">{phaseNum}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Phase Label */}
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-gray-900 mb-1">Phase {phaseNum}</div>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        isCurrentPhase
+                          ? 'bg-blue-100 text-blue-800 border-blue-200'
+                          : isCompleted
+                          ? 'bg-green-100 text-green-800 border-green-200'
+                          : 'bg-gray-100 text-gray-600 border-gray-200'
+                      }`}
+                    >
+                      {isCurrentPhase ? 'Current' : isCompleted ? 'Complete' : 'Pending'}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
-            <span>Current Phase</span>
+
+          {/* Phase Legend */}
+          <div className="flex flex-wrap items-center gap-6 mt-6 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Completed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-600">Current Phase</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+              <span className="text-sm text-gray-600">Upcoming</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-white/30 rounded-full"></div>
-            <span>Upcoming</span>
+        </div>
+      </div>
+
+      {/* Enhanced Quick Actions - Improved Styling */}
+      <div className="analytics-chart-card mt-6">
+        <div className="p-6 border-b border-gray-100">
+          <h4 className="analytics-title text-lg mb-1 flex items-center gap-2">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Sparkles className="h-4 w-4 text-purple-600" />
+            </div>
+            <span>Quick Actions</span>
+          </h4>
+          <p className="analytics-subtitle">Access key features and navigation tools</p>
+        </div>
+        
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div
+              className="analytics-metric-card p-4 cursor-pointer transition-all duration-200 hover:scale-105"
+              onClick={() => {
+                console.log(`📊 Analytics Navigation: Attempting to view analytics for Phase ${currentProject.currentPhase}`);
+                console.log("onViewPhaseAnalytics callback:", onViewPhaseAnalytics);
+
+                if (!onViewPhaseAnalytics) {
+                  console.error("❌ onViewPhaseAnalytics callback is not defined!");
+                  showToast("Analytics navigation error: Callback not defined", "warning");
+                  return;
+                }
+
+                onViewPhaseAnalytics(currentProject.currentPhase);
+                showToast(`Viewing Phase ${currentProject.currentPhase} Analytics`, "success");
+                console.log(`✅ Analytics navigation triggered successfully`);
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Phase Analytics</div>
+                  <div className="text-sm text-gray-600">View detailed insights</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="analytics-metric-card p-4 cursor-pointer transition-all duration-200 hover:scale-105"
+              onClick={() => {
+                console.log(`📚 Hackett IP Navigation: Attempting to access Hackett IP Library`);
+                console.log("onAccessHackettIP callback:", onAccessHackettIP);
+
+                if (!onAccessHackettIP) {
+                  console.error("❌ onAccessHackettIP callback is not defined!");
+                  showToast("Hackett IP navigation error: Callback not defined", "warning");
+                  return;
+                }
+
+                onAccessHackettIP("Finance Transformation");
+                showToast("Accessing Hackett IP Library", "success");
+                console.log(`✅ Hackett IP navigation triggered successfully`);
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Database className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Hackett IP Library</div>
+                  <div className="text-sm text-gray-600">Access 1,247+ assets</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -782,28 +911,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             <div className="flex flex-col items-center gap-1">
               <Database className="h-4 w-4" />
               <span className="text-xs">Hackett IP Library</span>
-            </div>
-          </Button>
-        </div>
-
-        {/* Additional Help Action */}
-        <div className="mt-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full bg-gradient-to-r from-orange-500/20 to-red-500/20 text-white border-white/30 hover:from-orange-500/30 hover:to-red-500/30 transition-all duration-200 min-h-[50px]"
-            onClick={() => {
-              console.log("📖 Opening Help Modal");
-              setShowHelpModal(true);
-              showToast("Opening User Guide", "info");
-            }}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <HelpCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">Help & User Guide</span>
-              <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30">
-                New
-              </Badge>
             </div>
           </Button>
         </div>
