@@ -27,6 +27,35 @@ import { TransformationProject, AIInsight as UIAIInsight, WorkflowPhase as UIWor
 // Utility function to generate IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+// Safe JSON parsing helper to prevent "Unexpected end of JSON input" errors
+const safeJsonParse = (jsonString: string | null | undefined, fallback: any = []): any => {
+  if (!jsonString || jsonString.trim() === "") {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(jsonString);
+    return parsed !== null && parsed !== undefined ? parsed : fallback;
+  } catch (error) {
+    console.warn("Failed to parse JSON:", jsonString, "Error:", error);
+    return fallback;
+  }
+};
+
+// Safe API response parser to handle empty responses
+const safeResponseJson = async (response: Response): Promise<any> => {
+  try {
+    const text = await response.text();
+    if (!text || text.trim() === "") {
+      console.warn("Empty response received from API");
+      return { insights: [], phases: [], workflowPhases: [] };
+    }
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Failed to parse API response:", error);
+    throw new Error("Invalid API response format");
+  }
+};
+
 const TransformationXPLR: React.FC = () => {
   const { user, isLoaded } = useUser();
 
@@ -86,25 +115,37 @@ const TransformationXPLR: React.FC = () => {
       setIsLoading(true);
 
       // Load user's companies from API
+      console.log("📊 Loading user companies...");
       const response = await fetch("/api/companies");
-      if (!response.ok) throw new Error("Failed to fetch companies");
+      if (!response.ok) {
+        console.warn(`Companies API response not OK: ${response.status} ${response.statusText}`);
+        throw new Error("Failed to fetch companies");
+      }
 
-      const { companies: userCompanies } = await response.json();
+      const data = await safeResponseJson(response);
+      const userCompanies = data.companies || [];
+      console.log(`📈 Loaded ${userCompanies.length} companies`);
       setCompanies(userCompanies);
 
       if (userCompanies.length === 0) {
         // No companies yet - show onboarding
+        console.log("👋 No companies found - showing onboarding");
         setIsFirstTimeUser(true);
         setShowOnboarding(true);
       } else {
         // Load first company by default
         const defaultCompany = userCompanies[0];
+        console.log("🎯 Loading default company:", defaultCompany.clientName);
         setSelectedCompany(defaultCompany.id);
         await loadCompanyData(defaultCompany);
       }
     } catch (error) {
-      console.error("Error loading user data:", error);
-      addNotification("Failed to load user data", "error");
+      console.error("❌ Error loading user data:", error);
+      addNotification("Failed to load user data. Please refresh the page.", "error");
+      // Set safe defaults
+      setCompanies([]);
+      setIsFirstTimeUser(true);
+      setShowOnboarding(true);
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +153,9 @@ const TransformationXPLR: React.FC = () => {
 
   const loadCompanyData = async (company: any) => {
     try {
-      // Convert database company to UI format
+      console.log("📊 Loading company data for:", company.clientName);
+
+      // Convert database company to UI format with safe JSON parsing
       const projectData: TransformationProject = {
         id: company.id,
         clientName: company.clientName,
@@ -123,7 +166,7 @@ const TransformationXPLR: React.FC = () => {
         aiAcceleration: company.aiAcceleration,
         startDate: company.startDate,
         estimatedCompletion: company.estimatedCompletion,
-        teamMembers: JSON.parse(company.teamMembers || "[]"),
+        teamMembers: safeJsonParse(company.teamMembers, []),
         hackettIPMatches: company.hackettIPMatches || 0,
         region: company.region,
         projectValue: company.projectValue || 0,
@@ -131,8 +174,8 @@ const TransformationXPLR: React.FC = () => {
         revenue: company.revenue || undefined,
         employees: company.employees || undefined,
         currentERP: company.currentERP || undefined,
-        painPoints: JSON.parse(company.painPoints || "[]"),
-        objectives: JSON.parse(company.objectives || "[]"),
+        painPoints: safeJsonParse(company.painPoints, []),
+        objectives: safeJsonParse(company.objectives, []),
         timeline: company.timeline || undefined,
         budget: company.budget || undefined,
       };
@@ -140,12 +183,23 @@ const TransformationXPLR: React.FC = () => {
       setCurrentProject(projectData);
 
       // Load AI insights and workflow phases for this company from API
+      console.log("🔍 Fetching insights and phases from API...");
       const response = await fetch(`/api/companies/${company.id}`);
-      if (!response.ok) throw new Error("Failed to fetch company data");
 
-      const { insights, phases } = await response.json();
+      if (!response.ok) {
+        console.warn(`API response not OK: ${response.status} ${response.statusText}`);
+        // If API fails, still set project data but with empty insights/phases
+        setAIInsights([]);
+        setWorkflowPhases([]);
+        return;
+      }
 
-      // Convert to UI format
+      const data = await safeResponseJson(response);
+      const { insights = [], phases = [] } = data;
+
+      console.log(`📈 Loaded ${insights.length} insights and ${phases.length} phases`);
+
+      // Convert to UI format with safe parsing
       const uiInsights: UIAIInsight[] = insights.map((insight: any) => ({
         id: insight.id,
         type: insight.type as any,
@@ -170,21 +224,26 @@ const TransformationXPLR: React.FC = () => {
         aiAcceleration: phase.aiAcceleration || 0,
         duration: phase.duration || "2 weeks",
         traditionalDuration: phase.traditionalDuration || "4 weeks",
-        hackettIP: JSON.parse(phase.hackettIP || "[]"),
-        deliverables: JSON.parse(phase.deliverables || "[]"),
-        aiSuggestions: JSON.parse(phase.aiSuggestions || "[]"),
-        keyActivities: JSON.parse(phase.keyActivities || "[]"),
-        dependencies: JSON.parse(phase.dependencies || "[]"),
-        teamRole: JSON.parse(phase.teamRole || "[]"),
-        clientTasks: JSON.parse(phase.clientTasks || "[]"),
+        hackettIP: safeJsonParse(phase.hackettIP, []),
+        deliverables: safeJsonParse(phase.deliverables, []),
+        aiSuggestions: safeJsonParse(phase.aiSuggestions, []),
+        keyActivities: safeJsonParse(phase.keyActivities, []),
+        dependencies: safeJsonParse(phase.dependencies, []),
+        teamRole: safeJsonParse(phase.teamRole, []),
+        clientTasks: safeJsonParse(phase.clientTasks, []),
         estimatedCompletion: phase.estimatedCompletion || undefined,
-        riskFactors: JSON.parse(phase.riskFactors || "[]"),
-        successMetrics: JSON.parse(phase.successMetrics || "[]"),
+        riskFactors: safeJsonParse(phase.riskFactors, []),
+        successMetrics: safeJsonParse(phase.successMetrics, []),
       }));
       setWorkflowPhases(uiPhases);
+
+      console.log("✅ Company data loaded successfully");
     } catch (error) {
-      console.error("Error loading company data:", error);
-      addNotification("Failed to load company data", "error");
+      console.error("❌ Error loading company data:", error);
+      // Set empty state to prevent undefined errors
+      setAIInsights([]);
+      setWorkflowPhases([]);
+      addNotification("Failed to load company data. Some features may be limited.", "warning");
     }
   };
 
@@ -345,11 +404,43 @@ const TransformationXPLR: React.FC = () => {
       // Trigger dashboard refresh to show new company
       setDashboardRefresh(prev => prev + 1);
 
-      // Now start AI analysis
-      console.log("🧠 Opening AI analysis modal for AI generation");
-      setShowAIAnalysis(true);
+      // Automatically generate AI analysis (no manual modal needed)
+      console.log("🧠 Automatically generating AI analysis for new company...");
+      addNotification("🤖 Generating AI analysis and 7-phase methodology...", "info");
 
-      console.log("✅ Company creation and AI analysis initiation completed successfully");
+      try {
+        // Call the generate-analysis API directly with questionnaire data
+        console.log("📤 Sending automatic AI analysis request...");
+        const analysisResponse = await fetch("/api/generate-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...data,
+            companyId: newCompany.id,
+            companyName: data.companyName,
+          }),
+        });
+
+        if (!analysisResponse.ok) {
+          const errorText = await analysisResponse.text();
+          console.error("Automatic AI Analysis API Error:", analysisResponse.status, analysisResponse.statusText, errorText);
+          throw new Error(`Failed to generate AI analysis: ${analysisResponse.status} ${analysisResponse.statusText}`);
+        }
+
+        console.log("📥 Parsing automatic AI analysis response...");
+        const analysisResults = await safeResponseJson(analysisResponse);
+        console.log("✅ AI Analysis generated successfully:", analysisResults);
+
+        // Process the analysis results automatically
+        await handleAIAnalysisComplete(analysisResults);
+
+        addNotification(`🎯 AI analysis completed! Your company "${data.companyName}" is ready for transformation.`, "success");
+      } catch (analysisError) {
+        console.error("❌ Error generating AI analysis:", analysisError);
+        addNotification("⚠️ Company created successfully, but AI analysis failed. You can generate it manually later.", "warning");
+      }
+
+      console.log("✅ Company creation and automatic AI analysis completed successfully");
     } catch (error) {
       console.error("❌ Error in company creation:", error);
       addNotification("❌ Error creating company. Please try again.", "error");
@@ -411,8 +502,10 @@ const TransformationXPLR: React.FC = () => {
       console.log("📈 Loading enhanced company data for dashboard...");
       await loadCompanyData(updatedCompany);
 
-      // Close AI analysis modal and switch to dashboard
-      setShowAIAnalysis(false);
+      // Close AI analysis modal if it was opened (only for manual flow)
+      if (showAIAnalysis) {
+        setShowAIAnalysis(false);
+      }
 
       // **CRITICAL FIX**: Switch to analytics tab to show the new AI insights and phases
       setActiveTab("analytics");
@@ -634,14 +727,18 @@ const TransformationXPLR: React.FC = () => {
             <p className="text-gray-600 mt-1">Manage your transformation projects and track progress</p>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm" onClick={() => {
-              // Trigger the CommandCenter help modal
-              if ((window as any).showHelpModal) {
-                (window as any).showHelpModal();
-              } else {
-                handleStartTour("ai-assistant");
-              }
-            }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // Trigger the CommandCenter help modal
+                if ((window as any).showHelpModal) {
+                  (window as any).showHelpModal();
+                } else {
+                  handleStartTour("ai-assistant");
+                }
+              }}
+            >
               <HelpCircle className="h-4 w-4 mr-2" />
               Help & User Guide
             </Button>
@@ -745,6 +842,7 @@ const TransformationXPLR: React.FC = () => {
                           engagementType: currentProject.engagementType,
                         };
 
+                        console.log("📤 Sending AI analysis request...");
                         const response = await fetch("/api/generate-analysis", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
@@ -752,20 +850,27 @@ const TransformationXPLR: React.FC = () => {
                         });
 
                         if (!response.ok) {
-                          throw new Error("Failed to generate AI analysis");
+                          const errorText = await response.text();
+                          console.error("API Error:", response.status, response.statusText, errorText);
+                          throw new Error(`Failed to generate AI analysis: ${response.status} ${response.statusText}`);
                         }
 
-                        const analysisResults = await response.json();
+                        console.log("📥 Parsing AI analysis response...");
+                        const analysisResults = await safeResponseJson(response);
                         console.log("✅ AI analysis generated successfully:", analysisResults);
 
                         // Reload the company data to get the new phases and insights
+                        console.log("🔄 Reloading company data with new analysis...");
                         await loadCompanyData(currentProject);
 
                         addNotification(`🎉 AI analysis complete! Generated ${analysisResults.workflowPhases?.length || 0} workflow phases`, "success");
                       } catch (error) {
                         console.error("❌ Error generating AI analysis:", error);
-                        addNotification("❌ Failed to generate AI analysis. Please try again.", "error");
+                        addNotification(`❌ Failed to generate AI analysis: ${error}`, "error");
                       }
+                    } else {
+                      console.warn("⚠️ No current project selected for AI generation");
+                      addNotification("Please select a company first", "warning");
                     }
                   }}
                 />

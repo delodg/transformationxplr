@@ -653,8 +653,27 @@ async function generateAllWorkflowPhases(questionnaireData: any) {
   for (let i = 0; i < phaseTemplates.length; i++) {
     const template = phaseTemplates[i];
     const startDate = new Date(baseDate.getTime() + i * 14 * 24 * 60 * 60 * 1000);
-    const durationWeeks = parseInt(template.duration.split(" ")[0]);
+    
+    // Parse duration safely, handling "Ongoing" and other edge cases
+    let durationWeeks = 2; // Default fallback
+    if (template.duration && template.duration !== "Ongoing") {
+      const durationParts = template.duration.split(" ");
+      const parsedDuration = parseInt(durationParts[0]);
+      if (!isNaN(parsedDuration) && parsedDuration > 0) {
+        durationWeeks = parsedDuration;
+      }
+    }
+    
+    // Calculate estimated completion date safely
     const estimatedCompletion = new Date(startDate.getTime() + durationWeeks * 7 * 24 * 60 * 60 * 1000);
+    
+    // Validate the date and provide fallback
+    const isValidDate = estimatedCompletion instanceof Date && !isNaN(estimatedCompletion.getTime());
+    const completionDateString = isValidDate 
+      ? estimatedCompletion.toISOString().split("T")[0]
+      : new Date(Date.now() + (i + durationWeeks) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+    console.log(`Phase ${template.phaseNumber}: duration="${template.duration}", weeks=${durationWeeks}, completion=${completionDateString}`);
 
     // Get Hackett IP assets for this phase
     let hackettIPAssets = template.hackettIP || [];
@@ -672,8 +691,10 @@ async function generateAllWorkflowPhases(questionnaireData: any) {
 
     phases.push({
       id: template.phaseNumber,
+      phaseNumber: template.phaseNumber, // Add the missing phaseNumber field
       title: template.title,
       description: template.description,
+      status: "pending", // Add the missing status field
       duration: template.duration,
       traditionalDuration: template.traditionalDuration,
       aiAcceleration: template.aiAcceleration,
@@ -686,6 +707,8 @@ async function generateAllWorkflowPhases(questionnaireData: any) {
       clientTasks: JSON.stringify(["Provide required documentation", "Assign dedicated resources", "Participate in workshops"]),
       riskFactors: JSON.stringify(["Resource availability constraints", "Stakeholder alignment challenges", "Technology integration complexity"]),
       successMetrics: JSON.stringify([`${template.title} completion within timeline`, "Stakeholder satisfaction > 85%", "Quality metrics achieved"]),
+      progress: 0, // Add missing progress field
+      estimatedCompletion: completionDateString, // Add missing estimatedCompletion field
       estimatedHours: 0,
       complexity: "standard",
     });

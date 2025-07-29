@@ -132,6 +132,11 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
   const [phaseAssets, setPhaseAssets] = useState<Record<number, HackettIPAsset[]>>({});
   const [loadingAssets, setLoadingAssets] = useState<Record<number, boolean>>({});
 
+  // Progress bar state for AI generation
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStage, setGenerationStage] = useState("");
+
   // Enhanced status functions
   const getStatusIcon = useCallback((status: WorkflowPhase["status"]) => {
     switch (status) {
@@ -566,11 +571,52 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
 
     try {
       console.log("🚀 Generating AI analysis and 7-phase methodology...");
+
+      // Start progress tracking
+      setIsGenerating(true);
+      setGenerationProgress(0);
+      setGenerationStage("Initializing AI analysis...");
+
+      // Stage 1: Initialize (0-15%)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setGenerationProgress(15);
+      setGenerationStage("Analyzing company requirements...");
+
+      // Stage 2: Company Analysis (15-35%)
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setGenerationProgress(35);
+      setGenerationStage("Generating strategic insights...");
+
+      // Stage 3: Insights Generation (35-60%)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setGenerationProgress(60);
+      setGenerationStage("Creating 7-phase methodology...");
+
+      // Stage 4: Workflow Phases (60-85%)
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      setGenerationProgress(85);
+      setGenerationStage("Integrating Hackett IP assets...");
+
+      // Stage 5: Finalization (85-100%)
       await onGenerateAI();
-      console.log("✅ AI analysis generation initiated.");
+
+      setGenerationProgress(100);
+      setGenerationStage("Analysis complete!");
+
+      // Hold completion state briefly before hiding
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log("✅ AI analysis generation completed.");
     } catch (error) {
       console.error("❌ Error generating AI analysis:", error);
+      setGenerationStage("Generation failed. Please try again.");
+      await new Promise(resolve => setTimeout(resolve, 2000));
       alert(`Failed to generate AI analysis: ${error}`);
+    } finally {
+      // Reset progress state
+      setIsGenerating(false);
+      setGenerationProgress(0);
+      setGenerationStage("");
     }
   };
 
@@ -822,27 +868,51 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                         needs.
                       </p>
                     </div>
-                    <Button
-                      onClick={generateAIAnalysis}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate AI Analysis & 7-Phase Methodology
-                    </Button>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Clock className="h-3 w-3" />
-                        <span>~2-3 minutes</span>
+
+                    {/* Progress Bar and Generation Status */}
+                    {isGenerating ? (
+                      <div className="w-full max-w-md space-y-4">
+                        {/* Progress Bar */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-gray-700">{generationStage}</span>
+                            <span className="text-gray-500">{generationProgress}%</span>
+                          </div>
+                          <Progress value={generationProgress} className="h-3 bg-gray-200" />
+                        </div>
+
+                        {/* Generation Status with Animation */}
+                        <div className="flex items-center justify-center space-x-2 text-blue-600">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm font-medium">AI is working on your transformation plan...</span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Target className="h-3 w-3" />
-                        <span>7 Custom Phases</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Zap className="h-3 w-3" />
-                        <span>AI-Accelerated</span>
-                      </div>
-                    </div>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={generateAIAnalysis}
+                          disabled={isGenerating}
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate AI Analysis & 7-Phase Methodology
+                        </Button>
+                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                          <div className="flex items-center space-x-1">
+                            <Clock className="h-3 w-3" />
+                            <span>~2-3 minutes</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Target className="h-3 w-3" />
+                            <span>7 Custom Phases</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Zap className="h-3 w-3" />
+                            <span>AI-Accelerated</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : (
