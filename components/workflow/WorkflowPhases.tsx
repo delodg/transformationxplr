@@ -1195,17 +1195,38 @@ export const WorkflowPhases: React.FC<WorkflowPhasesProps> = ({
                     <div>
                       <h4 className="font-semibold text-sm text-gray-900 mb-3 flex items-center gap-2">
                         <Target className="h-4 w-4 text-blue-600" />
-                        Deliverables ({safeJsonParse(selectedPhase.deliverables).length})
+                        Deliverables (
+                        {(() => {
+                          const deliverables = safeJsonParse(selectedPhase.deliverables);
+                          console.log(`🎯 Phase ${selectedPhase.id} deliverables:`, {
+                            raw: selectedPhase.deliverables,
+                            parsed: deliverables,
+                            type: typeof selectedPhase.deliverables,
+                            length: deliverables.length,
+                          });
+                          return deliverables.length;
+                        })()}
+                        )
                       </h4>
                       <div className="space-y-2">
-                        {safeJsonParse(selectedPhase.deliverables)
-                          .slice(0, 3)
-                          .map((deliverable: string, index: number) => (
+                        {(() => {
+                          const deliverables = safeJsonParse(selectedPhase.deliverables);
+                          if (deliverables.length === 0) {
+                            console.warn(`⚠️ No deliverables found for phase ${selectedPhase.id}`);
+                            return (
+                              <div className="flex items-start gap-2 p-2 bg-yellow-50 rounded-lg">
+                                <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                <span className="text-sm text-gray-700">No deliverables defined for this phase</span>
+                              </div>
+                            );
+                          }
+                          return deliverables.slice(0, 3).map((deliverable: string, index: number) => (
                             <div key={index} className="flex items-start gap-2 p-2 bg-blue-50 rounded-lg">
                               <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-gray-700">{deliverable}</span>
                             </div>
-                          ))}
+                          ));
+                        })()}
                         {safeJsonParse(selectedPhase.deliverables).length > 3 && (
                           <div className="text-xs text-gray-500 mt-2">+{safeJsonParse(selectedPhase.deliverables).length - 3} more deliverables</div>
                         )}

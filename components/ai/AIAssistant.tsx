@@ -50,6 +50,7 @@ import {
   Filter,
   Star,
   Database,
+  Bot,
 } from "lucide-react";
 import { ChatMessage, TransformationProject, AIInsight, ConversationContext, AIAssistantState, ClaudeApiRequest, ClaudeApiResponse, WorkflowPhase } from "../../types";
 
@@ -169,11 +170,11 @@ export const AIAssistant: React.FC<AIAssistantProps> = React.memo(({ isVisible, 
     if (!isLoadingConversation && messages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: "welcome",
-        content: `# 🤖 Welcome to Your AI Transformation Consultant
+        content: `# AXEL - Advanced eXecutive Enterprise Lead
 
-I'm **Axel**, your enterprise-grade AI assistant specialized in **Finance Transformation Blueprint** methodology.
+**AXEL** is your enterprise-grade AI consultant specialized in **Finance Transformation Blueprint** methodology and strategic optimization.
 
-## 📋 **Current Project Overview**
+## Current Project Overview
 
 | **Attribute** | **Details** |
 |---------------|-------------|
@@ -181,12 +182,12 @@ I'm **Axel**, your enterprise-grade AI assistant specialized in **Finance Transf
 | **Industry** | ${currentProject.industry || "Not specified"} |
 | **Current Phase** | **Phase ${currentProject.currentPhase}** of 7 |
 | **Progress** | ${Math.round(currentProject.progress)}% complete |
-| **AI Acceleration** | ${Math.round(currentProject.aiAcceleration)}% |
+| **AI Acceleration** | ${Math.round(currentProject.aiAcceleration)}% efficiency gain |
 | **Team Size** | ${currentProject.teamMembers?.length || "N/A"} members |
 
-## 🎯 **What I Can Help You With**
+## Strategic Capabilities
 
-### **📊 Strategic Analysis & Planning**
+### Strategic Analysis & Planning
 - **Gap analysis** and **benchmarking** against industry standards
 - **ROI calculations** and **business case development** 
 - **Risk assessment** and **mitigation strategies**
@@ -626,11 +627,11 @@ Include technology vendor recommendations, implementation roadmap, and ROI proje
     // Re-initialize with welcome message
     const welcomeMessage: ChatMessage = {
       id: "welcome",
-      content: `# 🤖 Welcome to Your AI Transformation Consultant
+      content: `# AXEL - Advanced eXecutive Enterprise Lead
 
-I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Transformation Blueprint** methodology.
+**AXEL** is your enterprise-grade AI consultant specialized in **Finance Transformation Blueprint** methodology and strategic optimization.
 
-## 📋 **Current Project Overview**
+## Current Project Overview
 
 | **Attribute** | **Details** |
 |---------------|-------------|
@@ -638,12 +639,12 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
 | **Industry** | ${currentProject.industry || "Not specified"} |
 | **Current Phase** | **Phase ${currentProject.currentPhase}** of 7 |
 | **Progress** | ${Math.round(currentProject.progress)}% complete |
-| **AI Acceleration** | ${Math.round(currentProject.aiAcceleration)}% |
+| **AI Acceleration** | ${Math.round(currentProject.aiAcceleration)}% efficiency gain |
 | **Team Size** | ${currentProject.teamMembers?.length || "N/A"} members |
 
-## 🎯 **What I Can Help You With**
+## Strategic Capabilities
 
-### **📊 Strategic Analysis & Planning**
+### Strategic Analysis & Planning
 - **Gap analysis** and **benchmarking** against industry standards
 - **ROI calculations** and **business case development** 
 - **Risk assessment** and **mitigation strategies**
@@ -871,10 +872,10 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
                           {message.role === "assistant" && (
                             <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                               <div className="flex items-center space-x-2">
-                                <div className="p-1 bg-blue-100 rounded-full">
-                                  <Brain className="h-3 w-3 text-blue-600" />
+                                <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-slate-100">
+                                  <Bot className="h-3.5 w-3.5 text-slate-600" />
                                 </div>
-                                <span className="text-xs font-medium text-gray-600">Axel AI Assistant</span>
+                                <span className="text-xs font-semibold text-gray-700">AXEL AI Assistant</span>
                               </div>
                               <div className="flex items-center space-x-2">
                                 {message.confidence && (
@@ -982,15 +983,15 @@ I'm **Claude**, your enterprise-grade AI assistant specialized in **Finance Tran
                     {isTyping && (
                       <div className="flex justify-start">
                         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                          <div className="flex items-center space-x-2">
-                            <div className="p-1 bg-blue-100 rounded-full">
-                              <Brain className="h-3 w-3 text-blue-600 animate-pulse" />
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-slate-100">
+                              <Bot className="h-3.5 w-3.5 text-slate-600" />
                             </div>
-                            <span className="text-sm text-gray-600">Axel is thinking...</span>
+                            <span className="text-sm font-medium text-gray-700">AXEL is analyzing...</span>
                             <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
                             </div>
                           </div>
                         </div>
